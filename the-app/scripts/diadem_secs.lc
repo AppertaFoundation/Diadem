@@ -1,0 +1,10 @@
+<?lc
+put $_GET["action"] into tAction
+put urldecode(tAction) into tAction 
+
+if tAction = "seconds" then
+	put the seconds into tSecs
+	put "SUCCESS" && tSecs
+end if
+put empty
+?>

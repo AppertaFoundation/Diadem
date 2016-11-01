@@ -1,0 +1,54 @@
+Dear xxClinicianxx
+
+This email is being sent to you by the DiADeM app (version xxAppVersionxx) as a result of xxInterviewerNamexx completing a DiADeM interview with xxPatientNamexx at xxTestTimexx on xxTestDatexx.
+
+-----------------------------------------------------------
+DIADEM REPORT
+-----------------------------------------------------------
+
+Test Date: xxTestDatexx
+Test Time: xxTestTimexx
+Interviewer Name: xxInterviewerNamexx
+Patient Name: xxPatientNamexx
+Informant Name: xxInformantNamexx
+Location: xxLocationNamexx (xxLocationCodexx)
+Consent obtained from: xxConsentSourcexx
+
+
+-----------------------------------------------------------
+Patient Review Summary
+-----------------------------------------------------------
+
+1 - Functional Impairment: xx1xx
+2 - Cognitive Impairment: xx2Typexx - xx2xx
+3 - Corroborating History: xx3xx
+4 - Investigations: xx4xx
+    Requirement considered: xx4Requirementxx
+    Blood tests: xx4Bloodsxx xx4BloodCodexx
+5 - Exclusion Criteria: xx5xx
+
+
+-----------------------------------------------------------
+xxDiagnosisxx
+-----------------------------------------------------------
+
+xxFollowup1xx
+
+xxFollowup2xx
+
+
+More information about the DiADeM tool and the Mandate for Diagnosis of Dementia in Care Homes can be found at xxDiademLinkxx
+
+
+Kind Regards
+
+
+Dementia Clinical Networks
+NHS England (North Yorkshire & the Humber)
+8th Floor/8E02
+Quarry House
+QuarryHill
+Leeds
+LS2 7UB
+england.diadem@nhs.net
+www.yhscn.nhs.uk/index.php
