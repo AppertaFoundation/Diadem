@@ -3,13 +3,14 @@ This is the online data store used for developing the **DiADeM** app.
 
 See resources in the [the-app](the-app/) directory for details of the *DiADeM* app.
 
-For more of a background to DiADeM you can view the presentations given at the 2016 LiveCode Conference as listed below: 
+For more of a background to DiADeM you can view the presentations given at the 2016 LiveCode Conference as listed below:
 
 ### Code4Health & OpenEHR at the LiveCode Conference
 In August 2016 there were several health-related sessions at the LiveCode conference. These session recordings have been made available by LiveCode for sharing among the OpenEHR community...
 
 ### Code4Health and The Apperta Foundation
 Peter Coates - Code4Health & OpenSource Programme Head, NHS England
+
 [Code4Health & The Apperta Foundation - Video Recording (29:00)](http://livecode.wistia.com/medias/afi3nnqzno?embedType=async&videoFoam=true&videoWidth=0)
 
 ### The Experience so far - Building an App for Diagnosing Dementia in Care Home Settings
