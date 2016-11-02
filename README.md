@@ -17,7 +17,8 @@ Peter Coates - Code4Health & OpenSource Programme Head, NHS England
 Colin Sloan - Quality Improvement Lead (Dementia and Mental Health, Clinical Networks, NHS England - North (Yorkshire & the Humber)
 
 [The Experience So Far - Video Recording (27:37)](http://livecode.wistia.com/medias/bm8nqyzv72?embedType=async&videoFoam=true&videoWidth=0)
-The Experience So Far - PowerPoint
+
+[The Experience So Far - PowerPoint](/presentations/Colin_Sloane_Experience_so_far_Building_an_App_for_Dementia.pptx)
 
 ### LiveCode and OpenEHR
 Dr Ian McNicoll - Co-Chair, openEHR Foundation. Director, freshEHR Clinical Informatics Ltd. Director, HANDIHealth CIC
