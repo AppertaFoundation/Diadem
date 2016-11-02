@@ -26,8 +26,8 @@ Dr Ian McNicoll - Co-Chair, openEHR Foundation. Director, freshEHR Clinical Info
 Hildegard Franke - Director, freshEHR Clinical Informatics Ltd.
 
 [LiveCode and OpenEHR - Video Recording (32:08)](http://livecode.wistia.com/medias/mivw33kp4u?embedType=async&videoFoam=true&videoWidth=0)
-What is an OpenEHR CDR - PowerPoint
-Why is eHealth so Hard - PowerPoint
+[What is an OpenEHR CDR - PowerPoint](/presentations/Ian_McNicoll_What_is_an_openEHR_CDR.pptx)
+[Why is eHealth so Hard - PowerPoint](/presentations/Hildegard_Franke_Why_is_eHealth_so_Hard.pptx)
 
 ### LiveCode Dev Tools for OpenEHR
 Dave Kilroy - Director, Application Insight Ltd
@@ -36,8 +36,7 @@ Dave Kilroy - Director, Application Insight Ltd
 
 [LiveCode Dev Tools for OpenEHR - Video Recording, Part 2 (33:34)](http://livecode.wistia.com/medias/hbt7axceiu?embedType=async&videoFoam=true&videoWidth=0)
 
-LiveCode Dev Tools for OpenEHR - PowerPoint
-LiveCode Dev Tools for OpenEHR - Resources
+[LiveCode Dev Tools for OpenEHR - PowerPoint](/presentations/Dave_Kilroy_LiveCode_Dev_Tools_for_OpenEHR-3.pptx)
 
 ### NHS Panel Session
 Peter Coates - Code4Health & OpenSource Programme Head, NHS England
@@ -46,3 +45,6 @@ Dr Ian McNicoll - Co-Chair, openEHR Foundation. Director, freshEHR Clinical Info
 Dave Kilroy - Director, Application Insight Ltd
 
 [NHS Panel Session - Video Recording (48:11)](http://livecode.wistia.com/medias/rcb8ts0gb8?embedType=async&videoFoam=true&videoWidth=0)
+
+# LiveCode & OpenEHR
+The DiADeM app makes use of OpenEHR and connects to it via the [libLivecodeOpenEHR](https://github.com/DaveKilroy/lib-LiveCode-OpenEHR) developer tools
