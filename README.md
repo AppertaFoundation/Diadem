@@ -18,7 +18,7 @@ Colin Sloan - Quality Improvement Lead (Dementia and Mental Health, Clinical Net
 
 [The Experience So Far - Video Recording (27:37)](http://livecode.wistia.com/medias/bm8nqyzv72?embedType=async&videoFoam=true&videoWidth=0)
 
-[The Experience So Far - PowerPoint](/presentations/Colin_Sloane_Experience_so_far_Building_an_App_for_Dementia.pptx)
+[The Experience So Far - pdf](/presentations/Colin_Sloane_Experience_so_far_Building_an_App_for_Dementia.pdf)
 
 ### LiveCode and OpenEHR
 Dr Ian McNicoll - Co-Chair, openEHR Foundation. Director, freshEHR Clinical Informatics Ltd. Director, HANDIHealth CIC
@@ -26,8 +26,8 @@ Dr Ian McNicoll - Co-Chair, openEHR Foundation. Director, freshEHR Clinical Info
 Hildegard Franke - Director, freshEHR Clinical Informatics Ltd.
 
 [LiveCode and OpenEHR - Video Recording (32:08)](http://livecode.wistia.com/medias/mivw33kp4u?embedType=async&videoFoam=true&videoWidth=0)
-[What is an OpenEHR CDR - PowerPoint](/presentations/Ian_McNicoll_What_is_an_openEHR_CDR.pptx)
-[Why is eHealth so Hard - PowerPoint](/presentations/Hildegard_Franke_Why_is_eHealth_so_Hard.pptx)
+[What is an OpenEHR CDR - pdf](/presentations/Ian_McNicoll_What_is_an_openEHR_CDR.pdf)
+[Why is eHealth so Hard - pdf](/presentations/Hildegard_Franke_Why_is_eHealth_so_Hard.pdf)
 
 ### LiveCode Dev Tools for OpenEHR
 Dave Kilroy - Director, Application Insight Ltd
@@ -36,7 +36,7 @@ Dave Kilroy - Director, Application Insight Ltd
 
 [LiveCode Dev Tools for OpenEHR - Video Recording, Part 2 (33:34)](http://livecode.wistia.com/medias/hbt7axceiu?embedType=async&videoFoam=true&videoWidth=0)
 
-[LiveCode Dev Tools for OpenEHR - PowerPoint](/presentations/Dave_Kilroy_LiveCode_Dev_Tools_for_OpenEHR-3.pptx)
+[LiveCode Dev Tools for OpenEHR - pdf](/presentations/Dave_Kilroy_LiveCode_Dev_Tools_for_OpenEHR-3.pdf)
 
 ### NHS Panel Session
 Peter Coates - Code4Health & OpenSource Programme Head, NHS England
