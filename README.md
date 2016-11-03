@@ -47,4 +47,4 @@ Dave Kilroy - Director, Application Insight Ltd
 [NHS Panel Session - Video Recording (48:11)](http://livecode.wistia.com/medias/rcb8ts0gb8?embedType=async&videoFoam=true&videoWidth=0)
 
 # LiveCode & OpenEHR
-The DiADeM app makes use of OpenEHR and connects to it via the [libLivecodeOpenEHR](https://github.com/DaveKilroy/lib-LiveCode-OpenEHR) developer tools
+The DiADeM app makes use of OpenEHR and connects to it via the [libLivecodeOpenEHR](https://github.com/ApplicationInsight/lib-LiveCode-OpenEHR) developer tools
