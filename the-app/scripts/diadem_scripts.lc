@@ -1,0 +1,58 @@
+<?lc
+put revOpenDatabase ("mysql","localhost","ua877898_diadem","ua877898_diadem","try3quEd8Yef6Ghi5glaut8eS") into tConID
+
+put "memberID" into tFieldName
+put $_GET["action"] into tAction
+put $_GET["username"] into tUsername
+put $_GET["password"] into tPassword
+put $_GET["memberID"] into tmemberID
+put $_GET["statusID"] into tstatusID
+put urldecode(tAction) into tAction
+put urldecode(tUsername) into tUsername
+put urldecode(tPassword) into tPassword
+put urldecode(tmemberID) into tmemberID
+put urldecode(tstatusID) into tstatusID
+
+if tConID is a number then
+
+	switch tAction
+
+		case "server"
+			put $_SERVER into tServerA
+			put the keys of tServerA into tKeys
+			repeat for each line tKey in tKeys
+				put tKey & "=" & tServerA[tKey] & cr after tList
+			end repeat
+			delete the last char of tList
+			put "SUCCESS" && tList
+
+		case "verifyCredentials"
+			put "id,email,password,active,uuid" into tFields
+			--put "SELECT " & tFields & " from users WHERE email='" & tUsername & "'" & " AND password='" & tPassword & "'" into tSQL
+			put "SELECT " & tFields & " from users WHERE email='" & tUsername & "'" into tSQL
+ 			put revDataFromQuery(tab, return, tConID, tSQL) into tMember
+			--
+			-- decrypt the password
+			set itemdel to tab
+			put item 3 of tMember into tEnc
+			put base64Decode(tEnc) into tEnc
+			decrypt tEnc using "bf" with "myKey" at 128 bit
+			if the result is empty then
+				put it into tDec
+			else
+				put the result into tDec
+			end if
+			put tDec into item 3 of tMember
+
+   		put "SUCCESS" && tMember
+			break
+
+
+	end switch
+end if
+--put empty
+revCloseDatabase tConID
+put empty
+--column delimiter is alt+m = µ
+--row delimiter is alt+z =Ω
+?>
