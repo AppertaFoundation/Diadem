@@ -1,0 +1,31 @@
+
+<div style="height:0px"></div>
+<img src="https://diademauth.code4health.org/assets/img/banner.svg" class="img-responsive" alt="DiADeM Web Service">
+	<nav class="navbar navbar-default" role="navigation">
+	    <!-- Brand and toggle get grouped for better mobile display -->
+	    <div class="navbar-header">
+	      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+	        <span class="sr-only">Toggle navigation</span>
+	        <span class="icon-bar"></span>
+	        <span class="icon-bar"></span>
+	        <span class="icon-bar"></span>
+	      </button>
+	    </div>
+
+	    <!-- Collect the nav links, forms, and other content for toggling -->
+	    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+	      <ul class="nav navbar-nav">
+			<li [[gData["menuActive1"] ]]>[[gData["mainAnchor"] ]]</li>
+	        <li [[gData["menuActive2"] ]]>[[gData["composersAnchor"] ]]</li>
+	        <li [[gData["menuActive3"] ]]>[[gData["recipientsAnchor"] ]]</li>
+	        <li [[gData["menuActive4"] ]]>[[gData["linksAnchor"] ]]</li>
+	        <li [[gData["menuActive5"] ]]>[[gData["aboutAnchor"] ]]</li>
+			  <li [[gData["menuActive6"] ]]>[[gData["contactAnchor"] ]]</li>
+			  <li [[gData["menuActive7"] ]]>[[gData["authAnchor"] ]]</li>
+      </ul>
+	    </div><!-- /.navbar-collapse -->
+	</nav>
+	<div style="text-align:right;margin-top:-15px;margin-right:5px;font-size:90%">[[gData["hiusername"] ]] [[gData["loginAnchor"] ]][[gData["registerAnchor"] ]]</div>
+   	<div style="margin-left:15px;margin-right:15px">
+		[[gData["mainTitle"] ]]
+		<p>[[gData["introText"] ]]</p>

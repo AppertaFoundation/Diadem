@@ -1,0 +1,16 @@
+<body>
+
+	<div id="container" class="createUser" style="margin-top:70px">
+    <header>
+		<h2>[[gData["ownUserDataTitle"] ]]</h2>
+		[[gData["adminDataMessage"] ]]
+    </header>
+
+	<div class="panel panel-default">
+	 	[[gData["adminDataList"] ]]
+ 	</div>
+
+	</div> <!--! end of #container -->
+
+</body>
+</html>

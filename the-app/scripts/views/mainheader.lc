@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+
+	<meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>[[gData["pageTitle"] ]]</title>
+
+    <!-- basic css used by authentication -->
+    <!--<? return rigCssAsset("authentication.css") ?>-->
+
+    <!-- core CSS, default theme, JavaScript & jQuery -->
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+	<link href="//maxcdn.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+	<script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+ 	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+
+  		<script>
+    		$(document).ready(function() {
+    			$("body").tooltip({ selector: '[data-toggle=tooltip]' });
+
+			$('#testing').click(function (e) {
+				e.preventDefault()
+				$('#message').html('<div class="alert alert-warning fade in"><button type="button" class="close close-alert" data-dismiss="alert" aria-hidden="true">x</button>This is a test error message</div>');
+			})
+
+			});
+		</script>
+
+  </head>
+	<body>
+		<div class="container">

@@ -1,0 +1,27 @@
+<body>
+
+	<div id="container" class="createUser" style="margin-top:70px">
+    <header>
+		<h2>[[gData["ownUserDataTitle"] ]]</h2>
+		<p>You are logged in as a registered DiADeM user.</p>
+	</header>
+
+		<p>
+		[[gData["toMyAccount"] ]]
+		[[gData["toClinicianData"] ]]
+		[[gData["toRecipientData"] ]]
+		[[gData["toManagerData1"] ]]
+		[[gData["toManagerData2"] ]]
+		[[gData["toPartnerData"] ]]
+		[[gData["toAuditorData"] ]]
+		[[gData["toPaperUserData"] ]]
+		[[gData["toAdminData"] ]]
+		</p>
+
+		<p>[[gData["ownUserDataMessage"] ]]</p>
+
+
+	</div> <!--! end of #container -->
+
+</body>
+</html>

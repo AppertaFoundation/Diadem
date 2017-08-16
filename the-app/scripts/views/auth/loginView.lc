@@ -1,0 +1,64 @@
+<body>
+
+	<div id="container" class="Login" style="margin-top:70px">
+    <header>
+		<h2>Login</h2>
+		<p style="margin-bottom:40px">Please login with your email and password.</p>
+    </header>
+
+    <div id="main" role="main">
+
+	 <div style="margin-left:20px;margin-top:30px;margin-bottom:30px;color:Crimson;font-size:160%" id="infoMessage">[[gData["message"] ]]</div>
+
+			[[gData["formOpen"] ]]
+			[[gData["fsOpen"] ]]
+
+
+			<table style="margin-left:20px; width:480px; margin-top:10px" cellpadding="8">
+				<tr>
+					<td style="text-align:right;vertical-align:top;width:150px;padding-right:10px">
+						[[gData["identityLabel"] ]]
+					</td>
+					<td style="width:300px;vertical-align:top">
+						[[gData["identity"] ]]
+						<div style="height:20px"></div>
+					</td>
+				</tr>
+				<tr>
+					<td style="text-align:right;vertical-align:top;padding-right:10px">
+						[[gData["passwordLabel"] ]]
+					</td>
+					<td style="vertical-align:top">
+						[[gData["loginPassword"] ]]
+						<div style="height:20px"></div>
+					</td>
+				</tr>
+				<tr>
+					<td style="text-align:right;vertical-align:top;padding-right:10px">
+						[[gData["rememberLabel"] ]]
+					</td>
+					<td style="vertical-align:top">
+						<input type="checkbox" name="remember[]" value="1" [[gData["chbRemember"] ]]]
+						<div style="height:20px"></div>
+					</td>
+				</tr>
+				<tr>
+					<td style="text-align:right;vertical-align:top;padding-right:10px">
+					</td>
+					<td style="text-align:right;vertical-align:top;padding-right:155px">
+						[[gData["loginSubmit"] ]]
+						<div style="height:10px"></div>
+						<a href = "https://diademauth.code4health.org/auth/forgotPassword">Forgot Password</a>
+						[[gData["authLink"] ]]
+					</td>
+				</tr>
+			</table>
+
+			[[gData["fsClose"] ]]
+			</form>
+
+    	</div>
+	</div> <!--! end of #container -->
+
+</body>
+</html>

@@ -1,0 +1,616 @@
+<?rev
+put gBASEPATH into gBASEPATH
+if gBASEPATH is "gBASEPATH" then
+	put "No direct script access allowed."
+	exit to top
+end if
+
+
+
+function getNextAvailableUuid pCheckUuid
+	put empty into tQueryResult
+	rigDbSelect "allocated,uuids"
+	rigDbWhere "uuids", pCheckUuid
+	put rigDbGet("registrationuuids") into tQueryResult
+
+	if tQueryResult["numrows"] > 0 then
+		put empty into tData
+		repeat with i = 1 to tQueryResult["numrows"]
+			put rigDbRow(i) into tRowData
+			if tRowData["allocated"] <> 0 then
+				put "This UUID has been previously allocated" into tResponse
+			else
+				put "OK" into tResponse
+			end if
+			put tRowData["uuids"] into gData["uuid"]
+		end repeat
+	else
+		put "This is not a valid DiADeM UUID" into tResponse
+	end if
+	return tResponse
+end getNextAvailableUuid
+
+
+
+
+
+function getAdminData
+	put rigAuthUsers() into tResult
+
+	rigDbSelect "id,firstName,lastName,organisation,recipientOrganisation,email,recipientEmail,createdOn,lastLogin,active,type"
+	--rigDbOrderBy "lastName", "asc"
+	--rigDbOrderBy "organisation", "asc"
+	--rigDbOrderBy "recipientOrganisation", "asc"
+	rigdbOrderBy "createdOn", "desc"
+	rigDbFrom "users"
+	put rigDbGet() into tQueryResult
+
+	if tQueryResult["numrows"] > 0 then
+		put empty into tData
+		put "<div class=" & quote & "table-responsive" & quote & "><table class=" & quote & "table table-hover" & quote & ">" into tData
+		put "<thead><tr>" after tData
+		put "<th height='42px' width='200px'>Name</th>" & \
+				"<th>Organisation (displayed most recently joined to oldest)</th>" after tData
+		put "</tr></thead><tbody>" after tData
+		repeat with i = 1 to tQueryResult["numrows"]
+			put rigDbRow(i) into tRowData
+
+			--GET USERGROUPS
+			put tRowData["type"] into tGroupsString
+			replace 1 with "Admin, " in tGroupsString
+			replace 2 with empty in tGroupsString
+			replace 3 with "Clinician, " tGroupsString
+			replace 4 with "Recipient, " in tGroupsString
+			replace 5 with "Project Manager, " in tGroupsString
+			replace 6 with "Partner Organisation, " in tGroupsString
+			replace 7 with "Auditor, " in tGroupsString
+			replace 8 with "Paper User, " in tGroupsString
+			if char -2 to -1 of tGroupsString = ", " then delete char -2 to -1 of tGroupsString
+
+			-- STATUS (ACTIVE OR NOT)
+			if tRowData["active"] = 1 then
+			put rigAnchor("auth/deactivate/" & tRowData["id"], "Active Status") && "(this link will let you deactivate this user)" into tStatus
+			else
+			put rigAnchor("auth/activate/" & tRowData["id"], "Inactive Status") && "(this link will resend the activation email)" into tStatus
+			end if
+
+			-- EDIT USER
+			put rigAnchor("auth/editUser/" & tRowData["id"], "Edit User") && "(this link allows you to edit the user's first name, last name, organisation and password)" into tEdit
+
+			-- DELETE USER
+			put rigAnchor("auth/deleteUser/" & tRowData["id"], "Delete User") && "(this link allows you to delete the user)" into tDelete
+
+			-- FORMAT DATETIME
+			put empty into tJoined
+			put convertSecs(tRowData["createdOn"]) into tJoined
+			wait 0
+
+			-- FORMAT DATA
+			put empty into tEntry
+			if tRowData["recipientOrganisation"] is not empty then
+				put "Organisation:" && tRowData["recipientOrganisation"] & "<br/>" into tEntry
+				put "Email:" && tRowData["recipientEmail"] & "<br/>" after tEntry
+			else
+				if tRowData["organisation"] is not empty then
+					put "Organisation:" && tRowData["organisation"] & "<br/>" into tEntry
+					put "Email:" && tRowData["email"] & "<br/>" after tEntry
+				else
+					put "Email:" && tRowData["email"] & "<br/>" into tEntry
+				end if
+			end if
+			put "Joined:" && tJoined & "<br/>" after tEntry
+			put "<b>Groups:" && tGroupsString & "<br/></b>" after tEntry
+			put tStatus & "<br/>" after tEntry
+			put tEdit & "<br/>" after tEntry
+			put tDelete after tEntry
+
+			-- ORGANISE TABLE INTO PRETTY ROWS
+			if i mod 2 = 0 then
+				put "<tr height='60px'>" & \
+							"<td>" & tRowData["firstName"] && tRowData["lastName"] & "</td>" & \
+							"<td>" & tEntry & "</td>" & \
+					 "</tr>" after tData
+			else
+				put "<tr height='60px' bgcolor=" & quote & "#CCFFFF" & quote & ">" & \
+							"<td>" & tRowData["firstName"] && tRowData["lastName"] & "</td>" & \
+							"<td>" & tEntry & "</td>" & \
+					 "</tr>" after tData
+			end if
+		end repeat
+		put "</tbody></table></div>" after tData
+		return tData
+	else
+		return "<br/>Error: No data on users at this time<br/><br/><br/>"
+	end if
+end getAdminData
+
+
+
+
+function getManagerData1
+	put rigAuthUsers() into tResult
+
+	rigDbSelect "id,firstName,lastName,organisation,recipientOrganisation,email,recipientEmail,createdOn,lastLogin,active,type"
+	rigdbOrderBy "createdOn", "desc"
+	rigDbFrom "users"
+	put rigDbGet() into tQueryResult
+
+	if tQueryResult["numrows"] > 0 then
+		put empty into tData
+		put "<div class=" & quote & "table-responsive" & quote & "><table class=" & quote & "table table-hover" & quote & ">" into tData
+		put "<thead><tr>" after tData
+		put "<th height='42px' width='200px'>Name</th>" & \
+				"<th>Organisation (displayed most recently joined to oldest)</th>" after tData
+		put "</tr></thead><tbody>" after tData
+		repeat with i = 1 to tQueryResult["numrows"]
+			put rigDbRow(i) into tRowData
+
+			--GET USERGROUPS
+			put tRowData["type"] into tGroupsString
+			replace 1 with "Admin, " in tGroupsString
+			replace 2 with empty in tGroupsString
+			replace 3 with "Clinician, " tGroupsString
+			replace 4 with "Recipient, " in tGroupsString
+			replace 5 with "Project Manager, " in tGroupsString
+			replace 6 with "Partner Organisation, " in tGroupsString
+			replace 7 with "Auditor, " in tGroupsString
+			replace 8 with "Paper User, " in tGroupsString
+			if char -2 to -1 of tGroupsString = ", " then delete char -2 to -1 of tGroupsString
+
+			-- STATUS (ACTIVE OR NOT)
+			if tRowData["active"] = 1 then
+				put "Active Status"  into tStatus
+			else
+				put "Inactive Status"  into tStatus
+			end if
+
+			-- FORMAT DATETIME
+			put empty into tJoined
+			put convertSecs(tRowData["createdOn"]) into tJoined
+			wait 0
+
+			-- FORMAT DATA
+			put empty into tEntry
+			if tRowData["recipientOrganisation"] is not empty then
+				put "Organisation:" && tRowData["recipientOrganisation"] & "<br/>" into tEntry
+				put "Email:" && tRowData["recipientEmail"] & "<br/>" after tEntry
+			else
+				if tRowData["organisation"] is not empty then
+					put "Organisation:" && tRowData["organisation"] & "<br/>" into tEntry
+					put "Email:" && tRowData["email"] & "<br/>" after tEntry
+				else
+					put "Email:" && tRowData["email"] & "<br/>" into tEntry
+				end if
+			end if
+			put "Joined:" && tJoined & "<br/>" after tEntry
+			put "<b>Groups:" && tGroupsString & "<br/></b>" after tEntry
+			put tStatus after tEntry
+
+			-- ORGANISE TABLE INTO PRETTY ROWS
+			if i mod 2 = 0 then
+				put "<tr height='60px'>" & \
+							"<td>" & tRowData["firstName"] && tRowData["lastName"] & "</td>" & \
+							"<td>" & tEntry & "</td>" & \
+					 "</tr>" after tData
+			else
+				put "<tr height='60px' bgcolor=" & quote & "#CCFFFF" & quote & ">" & \
+							"<td>" & tRowData["firstName"] && tRowData["lastName"] & "</td>" & \
+							"<td>" & tEntry & "</td>" & \
+					 "</tr>" after tData
+			end if
+		end repeat
+		put "</tbody></table></div>" after tData
+		return tData
+	else
+		return "<br/>Error: No data on users at this time<br/><br/><br/>"
+	end if
+end getManagerData1
+
+
+
+
+function getRecipientData pRecipientEmail
+	put pRecipientEmail into tRecipientEmail
+	--rigDbSelect "id,composerid,compstring,recipientemail,recipientname,patientname,status"
+	rigDbSelect "*"
+	rigDbWhere "compmetadata.recipientemail", tRecipientEmail
+	rigDbOrderBy "compmetadata.id", "asc"
+	rigDbFrom "compmetadata"
+	rigDbJoin "activitylog", "activitylog.compmetadata = compmetadata.id"
+	rigDbJoin "users", "users.id = compmetadata.composerid"
+	rigDbJoin "status", "status.statuskey = compmetadata.status"
+	put rigDbGet() into tQueryResult
+
+	if tQueryResult["numrows"] > 0 then
+		put empty into tData
+		put "<div class=" & quote & "table-responsive" & quote & "><table class=" & quote & "table table-hover" & quote & ">" into tData
+		put "<thead><tr>" after tData
+		put "<th height='42px'  width='300px'>Date & Time</th>" & \
+				"<th>Clinician Undertaking DiADeM Assessment</th>" & \
+				"<th width='250px'>Composition Id</th>" & \
+				"<th width='200px'>Status</th>" after tData
+		put "</tr></thead><tbody>" after tData
+		repeat with i = 1 to tQueryResult["numrows"]
+			put rigDbRow(i) into tRowData
+
+			put tRowData["firstName"] && tRowData["lastName"] into tName
+			if tRowData["recipientOrganisation"] is empty then put " (" & tRowData["organisation"] & ")" into tOrg
+			else put " (" & tRowData["recipientOrganisation"] & ")" into tOrg
+
+			put convertSecs(tRowData["secs"]) into tDateTime
+			put tRowData["statustext"] into tStatusText
+			if i mod 2 = 0 then
+				put "<tr height='60px'><td>" & tDateTime & "</td><td>" & tName & tOrg & "</td><td>" & tRowData["compuuid"] & "</td><td>" & tStatusText & "</td></tr>" after tData
+			else
+				put "<tr height='60px' bgcolor=" & quote & "#CCFFFF" & quote & "><td>" & tDateTime & "</td><td>" & tName & tOrg & "</td><td>" & tRowData["compuuid"] & "</td><td>" & tStatusText & "</td></tr>" after tData
+			end if
+		end repeat
+		put "</tbody></table></div>" after tData
+		return tData
+	else
+		return "<br/>No DiADeM Recipient metadata for this user at this time<br/><br/><br/>"
+	end if
+end getRecipientData
+
+
+
+
+function getPartnerData
+	return "View of Partner Organisation Data is not yet coded..."
+
+end getPartnerData
+
+
+
+
+function getAuditorData
+	return "View of Auditor Data is not yet coded..."
+
+end getAuditorData
+
+
+
+
+function getPaperUserData
+	return "View of Paper-User Data is not yet coded..."
+
+end getPaperUserData
+
+
+
+
+function getUsersCompMetadata pId
+	put pId into tId
+	--rigDbSelect "id,composerid,compstring,recipientemail,recipientname,patientname,status"
+	rigDbSelect "*"
+	rigDbWhere "compmetadata.composerid", pId
+	rigDbOrderBy "compmetadata.id", "asc"
+	rigDbFrom "compmetadata"
+	rigDbJoin "activitylog", "activitylog.compmetadata = compmetadata.id"
+	rigDbJoin "status", "status.statuskey = compmetadata.status"
+	put rigDbGet() into tQueryResult
+
+	if tQueryResult["numrows"] > 0 then
+		put empty into tData
+		put "<div class=" & quote & "table-responsive" & quote & "><table class=" & quote & "table table-hover" & quote & ">" into tData
+		put "<thead><tr>" after tData
+		put "<th height='42px' >Date & Time</th><th width='250px'>Composition Id</th><th>Recipient</th><th>Status</th>" after tData
+		put "</tr></thead><tbody>" after tData
+		repeat with i = 1 to tQueryResult["numrows"]
+			put rigDbRow(i) into tRowData
+			put convertSecs(tRowData["secs"]) into tDateTime
+			put tRowData["statustext"] into tStatusText
+			if i mod 2 = 0 then
+				put "<tr height='60px'><td>" & tDateTime & "</td><td>" & tRowData["compstring"] & "</td><td>" & tRowData["recipientname"] & "</td><td>" & tStatusText & "</td></tr>" after tData
+			else
+				put "<tr height='60px' bgcolor=" & quote & "#CCFFFF" & quote & "><td>" & tDateTime & "</td><td>" & tRowData["compstring"] & "</td><td>" & tRowData["recipientname"] & "</td><td>" & tStatusText & "</td></tr>" after tData
+			end if
+		end repeat
+		put "</tbody></table></div>" after tData
+		return tData
+	else
+		return "<br/>No composition metadata for this member at this time<br/><br/><br/>"
+	end if
+end getUsersCompMetadata
+
+
+
+
+function getManagerData2
+	put pId into tId
+	--rigDbSelect "id,composerid,compstring,recipientemail,recipientname,patientname,status"
+	rigDbSelect "*"
+	--rigDbWhere "compmetadata.composerid", pId
+	rigDbOrderBy "compmetadata.id", "desc"
+	rigDbFrom "compmetadata"
+	rigDbJoin "activitylog", "activitylog.compmetadata = compmetadata.id"
+	rigDbJoin "status", "status.statuskey = compmetadata.status"
+	rigDbJoin "users", "users.id = compmetadata.composerid"
+	put rigDbGet() into tQueryResult
+
+	if tQueryResult["numrows"] > 0 then
+		put empty into tData
+		put "<div class=" & quote & "table-responsive" & quote & "><table class=" & quote & "table table-hover" & quote & ">" into tData
+		put "<thead><tr>" after tData
+		put "<th height='42px' >Date & Time</th><th width='250px'>Clinician</th><th>Recipient</th><th>Status</th>" after tData
+		put "</tr></thead><tbody>" after tData
+		repeat with i = 1 to tQueryResult["numrows"]
+			put rigDbRow(i) into tRowData
+			put convertSecs(tRowData["secs"]) into tDateTime
+			put tRowData["statustext"] into tStatusText
+			if i mod 2 = 0 then
+				put "<tr height='60px'><td>" & tDateTime & "</td><td>" & tRowData["firstName"] && tRowData["lastName"] & "</td><td>" & tRowData["recipientname"] & "</td><td>" & tStatusText & "</td></tr>" after tData
+			else
+				put "<tr height='60px' bgcolor=" & quote & "#CCFFFF" & quote & "><td>" & tDateTime & "</td><td>" & tRowData["firstName"] && tRowData["lastName"] & "</td><td>" & tRowData["recipientname"] & "</td><td>" & tStatusText & "</td></tr>" after tData
+			end if
+		end repeat
+		put "</tbody></table></div>" after tData
+		return tData
+	else
+		return "<br/>No composition metadata at this time<br/><br/><br/>"
+	end if
+end getManagerData2
+
+
+
+
+function getReportRecipients
+
+	--get userIds where groupId = 4 (recipients)
+	rigDbSelect "userId"
+		rigDbFrom "users_groups"
+		rigDbWhere "groupId", 4
+	put rigDbGet() into tQueryResult
+
+	if tQueryResult["numrows"] > 0 then
+		repeat with i = 1 to tQueryResult["numrows"]
+			put rigDbRow(i) into tRowData
+			put tRowData["userId"] into tIdsFound[i]
+		end repeat
+	else
+		return "Error: No DiADeM Recipient user_groups"
+	end if
+
+	--get user data for previously found ids
+	rigDbSelect "recipientOrganisation,recipientEmail,organisation,email,firstName,lastName"
+	rigDbFrom "users"
+	rigDbOrWhereIn "id", tIdsFound
+	put rigDbGet() into tQueryResult
+	put empty into tData
+
+	if tQueryResult["numrows"] > 0 then
+		repeat with i = 1 to tQueryResult["numrows"]
+			put rigDbRow(i) into tRowData
+			put tRowData["recipientOrganisation"] & tab &  tRowData["recipientemail"] & tab & tRowData["organisation"] & tab & tRowData["email"] & tab & tRowData["firstName"] & tab & tRowData["lastName"] & cr after tData
+		end repeat
+		return tData
+	else
+		return "Error: No DiADeM Recipient users"
+	end if
+end getReportRecipients
+
+
+
+function getCompDateTime pId,pCompMetaDataId
+	put empty into tQueryResult
+	rigDbSelect "secs"
+	rigDbWhere "composerid", pId
+	rigDbWhere "compmetadata", pCompMetaDataId
+	rigDbLimit 1
+	get rigDbGet("activitylog")
+
+	put rigDbRow(1) into tRow
+	put tRow["secs"] into tSecs
+	if tSecs is not empty then return convertSecs(tSecs)
+end getCompDateTime
+
+
+
+command _updateUuids pCheckedUuid
+	put empty into tData
+	put 1 into tData["allocated"]
+
+	rigDbWhere "uuids", pCheckedUuid
+	get rigDbUpdate("registrationuuids", tData)
+end _updateUuids
+
+
+
+
+
+
+function getRemoteText pScreen
+	if pScreen is empty then put 1 into pScreen
+	rigDbSelect "id,title,content,notes,lastupdate"
+	rigDbWhere "id", pScreen
+--	rigDbOrderBy pOrderBy, "asc"
+	put rigDbGet("webpagecontent") into tQueryResult
+
+	if tQueryResult["numrows"] > 0 then
+		put rigDbRow(i) into tRowData
+		--return "resutlt " & tQueryResult["numrows"]
+		put tRowData["content"] into tData
+		--
+		put tData into tString
+	    put 0 into tStart
+	    repeat
+	       put offset("<font size=" & quote & "20" & quote & ">",tString) into tStart
+	       if tStart = 0 then exit repeat
+	       put tStart + 15 into tStop
+	       --
+	       put offset ("</font>",tString,tStop) into tStart2
+	       put tStop + tStart2 into tStart2
+	       put tStart2 + 6  into tStop2
+	       --
+	       put "</h3>" into char tStart2 to tStop2 in tString
+	       put "<h3>" into char tStart to tStop in tString
+	       --
+	       put 0 into tStart
+	    end repeat
+
+	    replace ("<font size=" & quote & "16" & quote & ">") with empty in tString
+	    replace "</font>" with empty in tString
+	    put tString into tData
+		return tData
+	else
+		return "<br/><br/>No remote text available for this screen at this time<br/><br/><br/>"
+	end if
+end getRemoteText
+
+
+
+
+command composerLogin tId, tIp, tSecs
+
+	put empty into tData
+	put tId into tData["composerid"]
+	put 1 into tData["action"]
+	put tIp into tData["ip"]
+	put tSecs into tData["secs"]
+
+	put rigDbInsert("activitylog", tData) into tReturn
+	return tReturn
+end composerLogin
+
+
+
+
+command recipientLogin tId, tIp, tSecs
+
+	put empty into tData
+	put tId into tData["composerid"]
+	put 2 into tData["action"]
+	put tIp into tData["ip"]
+	put tSecs into tData["secs"]
+
+	put rigDbInsert("activitylog", tData) into tReturn
+	return tReturn
+end recipientLogin
+
+
+
+
+command postCompMetadata tId, tCompuuid, tCompstring, tRecipientEmail, tRecipientName, tPatientName, tIp, tSecs
+	-- insert a record into compmetadata
+	put empty into tData
+	put tId into tData["composerid"]
+	put tCompuuid into tData["compuuid"]
+	put tCompstring into tData["compstring"]
+	put 1 into tData["compiteration"]
+	put tRecipientEmail into tData["recipientemail"]
+	put tRecipientName into tData["recipientname"]
+	put tPatientName into tData["patientname"]
+	put 1 into tData["status"]
+	put rigDbInsert("compmetadata", tData) into tCompReturn
+
+	if tCompReturn = true then
+		put getLatestCompMetadata() into tCompMetadataId
+
+		-- insert a record into activitylog
+		put empty into tData
+		put tId into tData["composerid"]
+		put 3 into tData["action"]
+		put tCompMetadataId into tData["compmetadata"]
+		put tIp into tData["ip"]
+		put tSecs into tData["secs"]
+
+		put rigDbInsert("activitylog", tData) into tReturn
+		if tReturn = true then
+			return tReturn
+		else
+			return "Error:" && tReturn
+		end if
+	else
+		return "Error:" && tCompMetadataId
+	end if
+end postCompMetadata
+
+
+
+
+function getLatestCompMetadata
+	put empty into tLatestID
+	rigDbSelect "id"
+	put rigDbGet("compmetadata") into tQueryResult
+
+	repeat with i = 1 to tQueryResult["numrows"]
+		put rigDbRow(i) into tRowData
+		put tRowData["id"] into tLatestID
+	end repeat
+	return tLatestID
+end getLatestCompMetadata
+
+
+
+
+
+command _addCompLog tUserid, tCompuuid, tCompstring, tIp, tSecs
+
+	put empty into tData
+	put tUserid into tData["userid"]
+	put tCompuuid into tData["compuuid"]
+	put tCompstring into tData["compstring"]
+	put tIp into tData["ip"]
+	put tSecs into tData["secs"]
+
+	put rigDbInsert("compmetadata", tData) into tReturn
+	return tReturn
+end _addCompLog
+
+
+
+
+function convertSecs pSecs
+	convert pSecs from seconds to dateitems
+	put pSecs into tItems
+	put "January,February,March,April,May,June,July,August,September,October,November,December" into tMonths
+	put item (item 2 of tItems) of tMonths into tMonth
+
+	switch item 3 of tItems
+		case 1
+		case 21
+		case 31
+			put "st" into tSuffix
+			break
+
+		case 2
+		case 22
+			put "nd" into tSuffix
+			break
+
+		case 3
+		case 23
+			put "rd" into tSuffix
+			break
+
+		default
+			put "th" into tSuffix
+	end switch
+
+	if the len of item 4 of tItems = 1 then put "0" before item 4 of tItems
+	if the len of item 5 of tItems = 1 then put "0" before item 5 of tItems
+	if the len of item 6 of tItems = 1 then put "0" before item 6 of tItems
+
+	--put item 3 of tItems & tSuffix && "of" && tMonth && item 1 of tItems && "at" && item 4 of tItems & ":" & item 5 of tItems & ":" & item 6 of tItems into tDateTime
+	put item 4 of tItems & ":" & item 5 of tItems & ":" & item 6 of tItems && "on" && item 3 of tItems & tSuffix && "of" && tMonth && item 1 of tItems into tDateTime
+	return tDateTime
+end convertSecs
+
+
+
+
+
+
+function getStatusString pStatus
+	rigDbSelect "statustext"
+	rigDbWhere "statuskey", pStatus
+	get rigDbGet("status")
+
+	put rigDbRow(1) into tRow
+	put tRow["statustext"] into tText
+	if tText is not empty then return tText
+end getStatusString
+
+
+--| END OF diademmodel.lc
+--| Location: /31410241922/application/models/diademmodel.lc

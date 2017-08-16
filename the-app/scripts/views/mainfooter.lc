@@ -1,0 +1,32 @@
+		</div>
+	<div class="panel panel-default" id="footer" style="background-color:rgb(220,220,220)">
+			<table width="80%" cellpadding="0" align="center" style="margin-top:-10px; margin-bottom:10px; text-align:center">
+				<tr>
+					<td style="text-align:left;vertical-align:top;padding-left:20px;padding-right:10px">
+						<br/><b>Project DiADeM</b><br/>
+						c/o Clinical Networks<br/>
+						NHS England - North (Yorkshire & the Humber)<br/>
+						8th Floor / 8E02<br/>
+						Quarry House<br/>
+						Quarry Hill<br/>
+						Leeds LS2 7UB
+					</td>
+					<td style="text-align:left;vertical-align:top;padding-left:10px;padding-right:20px">
+					<br/>Social Media:<br/>
+					<a href="https://twitter.com/Diadem_App" alt="link to @Diadem_App" title="link to @Diadem_App" target="_blank">@Diadem_App</a><br/>
+					<a href="https://twitter.com/YHSCN_MHDN" alt="link to @YHSCN_MHDN" title="link to @YHSCN_MHDN" target="_blank">@YHSCN_MHDN</a><br/>
+					<a href="https://twitter.com/code4health" alt="link to @code4health" title="link to @code4health" target="_blank">@code4health</a><br/>
+					<a href="https://twitter.com/AppertaUK" alt="link to @AppertaUK" title="link to @AppertaUK" target="_blank">@AppertaUK</a><br/>
+					</td>
+				</tr>
+				<tr>
+					</tr>
+			</table>
+		</div>
+		<div style="color:white;text-align:right;margin-top:-15px;padding-right:5px;padding-bottom:30;height:30px">
+			<a href="https://applicationinsight.com" & "alt="Application Insight Ltd" title="Application Insight Ltd"></a>
+		</div>
+	</div><!-- /Container --!>
+
+</body>
+</html>

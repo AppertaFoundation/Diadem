@@ -1,0 +1,2683 @@
+<?rev
+
+put "auth,index,intro,login,logout,createUser,createClinician,createRecipient,createClinicianRecipient,createPartner,createPaperUser,createUserSuccess,createUserConfirmation,createUserFail,activate,deactivate,forgotPassword,resetPassword,changePassword,editUser,editOwnAccount,viewOwnUserData,viewClinicianData,viewRecipientData,viewManagerData,viewManagerData2,viewPartnerData,viewAuditorData,viewPaperUserData,viewAdminData,deleteUser,sendConfirmationEmail,createUserNotNhsEmail" into gControllerHandlers
+
+
+command auth
+     # LOAD HELPERS
+     put "form,url,asset" into tHelpers
+     rigLoadHelper tHelpers
+
+     # LOAD LIBRARIES
+     rigLoaderLoadLibrary "Formvalidation"
+     rigLoaderLoadLibrary "Table"
+     rigLoaderLoadLibrary "Authentication"
+     rigLoaderLoadLibrary "Email"
+
+     #Anchors
+     put rigAnchor("main", "Home") into gData["mainAnchor"]
+  	  put rigAnchor("composers", "Clinicians Undertaking DiADeM Assessments") into gData["composersAnchor"]
+  	  put rigAnchor("recipients", "Recipients of DiADeM Reports") into gData["recipientsAnchor"]
+  	  put rigAnchor("links", "Links") into gData["linksAnchor"]
+  	  put rigAnchor("about", "About") into gData["aboutAnchor"]
+  	  put rigAnchor("contact", "Contact") into gData["contactAnchor"]
+  	  put rigAnchor("auth", "Your Account") into gData["authAnchor"]
+
+     put "" into gData["menuActive1"]--Home
+     put "" into gData["menuActive2"]--DiADeM Composers
+     put "" into gData["menuActive3"]--Recipients of DiADeM Reports
+     put "" into gData["menuActive4"]--Links
+     put "" into gData["menuActive5"]--About
+     put "" into gData["menuactive6"]--Contact
+     put "class=" & quote & "active" & quote into gData["menuactive7"]--Your Account
+end auth
+
+
+
+command index
+     # SET PAGE TITLE
+     put "DiADeM Web Service" into gData["pageTitle"]
+
+     # IF USER IS NOT LOGGED IN
+     if rigAuthLoggedIn() is FALSE then
+
+         # REDIRECT TO LOGIN PAGE AND KEEP FLASHDATA IN CASE THERE IS ANY
+         if rigSessFlashdata("message") <> FALSE then
+               rigKeepSessFlashdata "message"
+         end if
+
+         rigRedirect "auth/intro"
+
+      -- IF USER IS LOGGED IN BUT IS NOT AN ADMIN
+     else if rigAuthIsAdmin() is FALSE then
+
+         # REDIRECT TO HOME PAGE BECAUSE USER IS NOT ALLOWED TO VIEW ADMIN CONTENT
+        rigRedirect "auth/viewOwnUserData"
+
+      -- IF USER IS LOGGED AND IS AN ADMIN
+     else
+
+        rigRedirect "auth/viewAdminData"
+       -- show logout link
+          put rigAuthUser() into tQueryResult
+          if (tQueryResult <> false) AND (tQueryResult is an array) then
+               put rigDBRow() into tUser
+               put "hi" && tUser["username"] into gData["hiusername"]
+               put rigAnchor("auth/logout", "logout?") into gData["loginAnchor"]
+               put empty into gData["registerAnchor"]
+          end if
+          # ADMIN CONTENT
+          #
+          # SHOW VALIDATION ERRORS OR FLASH DATA IN CASE THERE IS ANY
+          put rigValidationErrors("<div style=" & quote & "width:490px;background-color:LightYellow;padding:15px;margin:-20px;" & quote && "class=" & quote & "error" & quote & ">", "</div>") into tErrors
+          if tErrors <> empty then
+               put tErrors into gData["message"]
+          else
+               put rigSessFlashdata("message") into gData["message"]
+               if gData["message"] is FALSE then
+                    put empty into gData["message"]
+               end if
+          end if
+
+          # BUILD USERS LIST
+          put rigAuthUsers() into tResult -- gData["users"]
+
+          if tResult <> FALSE then
+
+               # BUILD MODIFIED RESULT ARRAY
+               put 0 into tIncr
+               --
+               -- prepare the html table
+               put empty into tData
+               put "<div class=" & quote & "panel panel-default" & quote & ">" into tData
+               put "<div class=" & quote & "table-responsive" & quote & "><table class=" & quote & "table table-hover" & quote & ">" after tData
+               put "<thead><tr>" after tData
+               put "<th width='5px' height='42px' ></th><th width='110px' >First Name</th><th width='110px' >Last Name</th><th width='200px' >Email</th><th width='140px' >Groups</th><th width='100' >Status</th><th width='110'>Edit, Delete" after tData
+               put "</tr></thead><tbody>" after tData
+               --
+               repeat for each key tKey in tResult
+                    add 1 to tIncr
+
+                    put tResult[tIncr] into tRow
+                    # GET FIRST, LAST NAME AND EMAIL
+                    put tRow[13] into tResultData[tIncr][1]
+                    put tRow[14] into tResultData[tIncr][2]
+                    put tRow[5] into tResultData[tIncr][3]
+
+                    # GET USERS GROUPS
+                    put rigAuthUserGroups(tRow[1]) into tGroupsResult
+
+                    if tGroupsResult <> FALSE then
+
+                         repeat for each key tKey in tGroupsResult
+                              put tGroupsResult[tKey] into tGroupsRow
+                              # GET NAME OF GROUP
+                              put tGroupsRow[2] & ", " after tResultData[tIncr][4]
+                         end repeat
+                         delete char -2 to -1 of tResultData[tIncr][4]
+                    end if
+
+                    # GET STATUS
+                    if tRow[12] is 1 then
+                         put rigAnchor("auth/deactivate/" & tRow[1], "Active") into tResultData[tIncr][5]
+                    else
+                         put rigAnchor("auth/activate/" & tRow[1], "Inactive") into tResultData[tIncr][5]
+                    end if
+
+                    # LINK TO EDIT USER
+                    put rigAnchor("auth/editUser/" & tRow[1], "Edit") into tResultData[tIncr][6]
+
+                    # LINK TO DELETE USER
+                    put rigAnchor("auth/deleteUser/" & tRow[1], "Delete") into tResultData[tIncr][7]
+                    --
+                    -- populate and expand the html table
+                    if tIncr mod 2 = 0 then
+                         put "<tr height='40px'><td></td><td>" & tResultData[tIncr][1] & "</td><td>" & tResultData[tIncr][2] & "</td><td>" & tResultData[tIncr][3] & "</td><td>" & tResultData[tIncr][4] & "</td><td>" & tResultData[tIncr][5] & "</td><td>" & tResultData[tIncr][6] && tResultData[tIncr][7] & "</td></tr>" after tData
+                    else
+                         put "<tr height='40px' bgcolor=" & quote & "#CCFFFF" & quote & "><td></td><td>" & tResultData[tIncr][1] & "</td><td>" & tResultData[tIncr][2] & "</td><td>" & tResultData[tIncr][3] & "</td><td>" & tResultData[tIncr][4] & "</td><td>" & tResultData[tIncr][5] & "</td><td>" & tResultData[tIncr][6] && tResultData[tIncr][7] & "</td></tr>" after tData
+                    end if
+               end repeat
+
+               --# NOW GENERATE A USERS TABLE
+               --put "First Name____", "Last Name______", "Email_________________________", "Groups____________", "Status______", "Edit, Delete" into tFieldnames
+               --rigSetTableHeading tFieldnames
+               --put rigGenerateTable(tResultData) into gData["usersTable"]
+               put "</tbody></table></div></div>" after tData
+               put tData into gData["usersTable"]
+          end if
+
+
+
+          # LINK TO LOGOUT
+          put rigAnchor("auth/logout/", "Logout") into gData["logoutLink"]
+
+          # LINK TO CREATE NEW USER
+          put rigAnchor("auth/createUser/", "Create New User.") into gData["newUserLink"]
+
+          # LOAD THE VIEW FILE
+          get rigLoadView("auth/authMainView")
+     end if
+end index
+
+
+
+command intro
+   put "Registering with DiADeM" into gData["pageTitle"]
+   put "Registering with DiADeM" into gData["introTitle"]
+   put "<p>There are various roles in the DiADeM project:</p>" into gData["introMessage1"]
+   put "<ul><li>At a care home or nursing home - GPs or nurse clinicians make use of the DiADeM app to interview patients and then upload the result to a secure server</li><li>At a General Practice - GPs, practice managers or other members of staff receive emails containing a patient's DiADeM Report for internal processing</li><li>Interested organisations (such as The Alzhiemers Society) can view a 'dashboard' of project statistics and contribute to the direction of the project</li><li>People who prefer to use the original paper-based DiADeM tool</li></ul>" into gData["introMessage2"]
+   put "<p style='margin-top:20px'>With this in mind there are various ways people can register with Diadem:</p>" into gData["introMessage3"]
+   put "<ul><li>Register as a <a href=https://diademauth.code4health.org/auth/createClinician>Clinician Undertaking DiADeM Assessments</a></li><li>Register as a <a href=https://diademauth.code4health.org/auth/createRecipient>DiADeM Recipient</a></li><li>Register as both a <a href=https://diademauth.code4health.org/auth/createClinicianRecipient>Clinician Undertaking DiADeM Assessments and Recipient of DiADeM Reports</a></li><li>Register as a <a href=https://diademauth.code4health.org/auth/createPartner>DiADeM Partner Organisation</a></li><li>Register to download a <a href=https://diademauth.code4health.org/auth/createPaperUser>PDF of the original paper-based DiADeM tool</a></li></ul>" into gData["introMessage4"]
+   put "Logging in to DiADeM" into gData["introTitle2"]
+   put "<p>OR, if you have already registered you can simply <a href=https://diademauth.code4health.org/auth/login>Login</a></p>" into gData["introMessage5"]
+
+   get rigLoadView("auth/introMainView")
+end intro
+
+
+
+
+command createClinician
+
+   put "Register as a Clinician Undertaking DiADeM Assessments" into gData["pageTitle"]
+   put "Register as a Clinician Undertaking DiADeM Assessments" into gData["formTitle"]
+   put "This form is for those wishing to create DiADeM reports (by using the DiADeM app) and not wishing to receive DiAdeM reports (at GP Surgeries etc). Your options are to:" into gData["formMessage1"]
+   put "By registering here you will be able to log in on the DiAdeM app (please ask if you don't know how to get the DiADeM app) and carry out DiADeM assessments. For more on being a 'Clinician Undertaking DiADeM Assessments' please click <a href=" & quote & "https://diademauth.code4health.org/composers" & quote & ">here.</a>" into gData["formMessage2"]
+   put "Please complete all fields with an asterisk beside them." into gData["formMessage3"]
+   put "clinician" into gData["createUserType"]
+   put "DiADeM Clinician" into gData["accountType"]
+
+     -- link to main auth view
+     if (rigAuthIsAdmin() is TRUE) then
+          put rigAnchor("auth/", "Back to Previous Page") into gData["authLink"]
+     else
+          put rigAnchor("auth/", "Back") into gData["authLink"]
+     end if
+
+     -- ALLOW PEOPLE TO (ATTEMPT TO) REGISTER AS NEW USERS
+     -- ALSO ALLOW ADMINS TO CREATE NEW USERS
+     if (rigAuthLoggedIn() is TRUE) then -- IF LOGGED IN
+          if (rigAuthIsAdmin() is not TRUE) then -- IF NOT AN ADMIN USER
+               rigRedirect "auth/" -- REDIRECT TO (LOGIN) PAGE
+          end if
+     end if
+
+     # FORM OPEN
+     put "authForm" into tFormAttr["id"]
+     put rigFormOpen("auth/createClinician", tFormAttr) into gData["formOpen"]
+
+     # FIELD SET
+     put rigFormFieldset("") into gData["fsOpen"]
+     put rigFormFieldsetClose() into gData["fsClose"]
+
+     # FORM LABELS
+     put "formLabel" into tLabelAttr["class"]
+     put rigFormLabel("First Name:", "first", tLabelAttr) into gData["firstLabel"]
+     put rigFormLabel("Last Name:", "last", tLabelAttr) into gData["lastLabel"]
+     put rigFormLabel("Organisation:", "organisation", tLabelAttr) into gData["organisationLabel"]
+     put rigFormLabel("Email:", "recipientEmail", tLabelAttr) into gData["emailLabel"]
+     put rigFormLabel("Password:", "password", tLabelAttr) into gData["passwordLabel"]
+     put rigFormLabel("Confirm Password:", "passwordConfirm", tLabelAttr) into gData["passwordConfirmLabel"]
+
+     # SUBMIT
+     put "createSubmit" into tSubmitArr["name"]
+     put "Register" into tSubmitArr["value"]
+     put "createBtn" into tSubmitArr["id"]
+     put rigSubmitButton(tSubmitArr) into gData["createSubmit"]
+
+     # FORM VALIDATION
+     if rigFormValidRun("auth/createClinician") is TRUE then
+          # GET ACCOUNT DATA
+          if $_POST is an array then
+            put 2 into tGroups["2"] -- MEMBERS GROUP
+            put 3 into tGroups["4"] -- CLINICIANS GROUP
+            put "23" into tExtraData["type"]
+
+            put toLower(rigVarPOST("first")) && toLower(rigVarPOST("last")) into tUserName
+            put rigVarPOST("password") into tPassword
+            put rigVarPOST("email") into tEmail
+            put rigVarPOST("first") into tExtraData["firstName"]
+            put rigVarPOST("last") into tExtraData["lastName"]
+            put rigVarPOST("organisation") into tExtraData["organisation"]
+            put rigVarPOST("userType") into tCreateUserType
+         end if
+
+            put rigAuthRegister(tUserName, tPassword, tEmail, tExtraData, tGroups) into tRegistration
+
+          # CHECK REGISTRATION DATA
+          if tRegistration is an array then
+               rigLogMessage "debug", "identity:" && tRegistration["identity"]
+               rigLogMessage "debug", "id:" && tRegistration["id"]
+               rigLogMessage "debug", "email:" && tRegistration["email"]
+               rigLogMessage "debug", "activationCode:" && tRegistration["activationCode"]
+          else
+               rigLogMessage "debug", "tRegistration:" && tRegistration
+          end if
+          rigLogMessage "debug", "messages:" && rigAuthMessages()
+          #
+
+          # IF REGISTRATION WAS SUCCESSFUL REDIRECT TO AUTHENTICATION PAGE
+          if tRegistration <> FALSE then
+               put rigAuthMessages() into tMessages
+               rigSetSessFlashdata "message", tMessages
+               rigRedirect "/auth/createUserSuccess"
+          else
+               # LOAD VIEW
+               put rigAuthErrors() into tErrors
+               rigSetSessFlashdata "message", tErrors
+               rigRedirect "auth/createClinician"
+          end if
+
+     else -- if rigFormValidRun("auth/createClinician") is TRUE then
+
+        put rigValidationErrors("<div style=" & quote & "width:490px;background-color:LightYellow;padding:15px;margin:-20px;" & quote && "class=" & quote & "error" & quote & ">", "</div>") into tErrors
+          if tErrors <> empty then
+               put tErrors into gData["message"]
+          else
+               put rigSessFlashdata("message") into gData["message"]
+               if gData["message"] is FALSE then
+                    put empty into gData["message"]
+               end if
+          end if
+
+          # INPUT FIELDS
+          put "first" into tInFirstArr["name"]
+          # RE-POPULATE THE FIELD
+          put rigSetValue("first") into tInFirstArr["value"]
+          put "50" into tInFirstArr["maxlength"]
+          put rigFormInput(tInFirstArr) into gData["first"]
+
+          put "last" into tInLastArr["name"]
+          # RE-POPULATE THE FIELD
+          put rigSetValue("last") into tInLastArr["value"]
+          put "50" into tInLastArr["maxlength"]
+          put rigFormInput(tInLastArr) into gData["last"]
+
+          put "organisation" into tInOrganisationArr["name"]
+          # RE-POPULATE THE FIELD
+          put rigSetValue("organisation") into tInOrganisationArr["value"]
+          put "226" into tInOrganisationArr["maxlength"]
+          put "40" into tInOrganisationArr["size"]
+          put rigFormInput(tInOrganisationArr) into gData["organisation"]
+
+          put "email" into tInMailArr["name"]
+          # RE-POPULATE THE FIELD
+          put rigSetValue("email") into tInMailArr["value"]
+          put "226" into tInMailArr["maxlength"]
+          put "40 " into tInMailArr["size"]
+          put rigFormInput(tInMailArr) into gData["email"]
+
+          put "password" into tInPassArr["name"]
+          # RE-POPULATE THE FIELD
+          put rigSetValue("password") into tInPassArr["value"]
+          put "50" into tInPassArr["maxlength"]
+          put rigFormPassword(tInPassArr) into gData["password"]
+
+          put "passwordConfirm" into tInPassConfArr["name"]
+          # RE-POPULATE THE FIELD
+          put rigSetValue("passwordConfirm") into tInPassConfArr["value"]
+          put "50" into tInPassConfArr["maxlength"]
+          put rigFormPassword(tInPassConfArr) into gData["passwordConfirm"]
+
+          -- HIDDEN FIELD
+          put rigFormHidden("userType",tCreateUserType) into gData["userType"]
+     end if
+
+     # LOAD VIEW
+     get rigLoadView("auth/createUserMainView")
+end createClinician
+
+
+
+
+command createRecipient
+
+   put "Register as a DiADeM Recipient" into gData["pageTitle"]
+   put "Register as a DiADeM Recipient" into gData["formTitle"]
+   put "This form is for those based at a GP Surgery wishing to receive DiADeM Reports created by others." into gData["formMessage1"]
+   put "By registering here you will be able to recieve DiAdeM Reports created by clinicians (who have chosen to send them to your GP Practice from a drop-down list on the DiADeM app). You will not be able to use the app yourself (see the other ways you can register with the DiADeM project). For more on being a 'DiADeM Recipient' please click <a href=" & quote & "https://diademauth.code4health.org/recipients" & quote & ">here.</a>" into gData["formMessage2"]
+   put "For security reasons <b>an nhs.net email address is required</b> for DiADeM recipients. Please complete all fields with an asterisk beside them." into gData["formMessage3"]
+   put "recipient" into gData["createUserType"]
+   put "DiADeM Recipient" into gData["accountType"]
+
+     -- link to main auth view
+     if (rigAuthIsAdmin() is TRUE) then
+          put rigAnchor("auth/", "Back to Previous Page") into gData["authLink"]
+     else
+          put rigAnchor("auth/", "Back") into gData["authLink"]
+     end if
+
+     -- ALLOW PEOPLE TO (ATTEMPT TO) REGISTER AS NEW USERS
+     -- ALSO ALLOW ADMINS TO CREATE NEW USERS
+     if (rigAuthLoggedIn() is TRUE) then -- IF LOGGED IN
+          if (rigAuthIsAdmin() is not TRUE) then -- IF NOT AN ADMIN USER
+               rigRedirect "auth/" -- REDIRECT TO (LOGIN) PAGE
+          end if
+     end if
+
+     # FORM OPEN
+     put "authForm" into tFormAttr["id"]
+     put rigFormOpen("auth/createRecipient", tFormAttr) into gData["formOpen"]
+
+     # FIELD SET
+     put rigFormFieldset("") into gData["fsOpen"]
+     put rigFormFieldsetClose() into gData["fsClose"]
+
+     # FORM LABELS
+     put "formLabel" into tLabelAttr["class"]
+     put rigFormLabel("First Name:", "first", tLabelAttr) into gData["firstLabel"]
+     put rigFormLabel("Last Name:", "last", tLabelAttr) into gData["lastLabel"]
+     put rigFormLabel("Recipient Organisation:", "recipientOrganisation", tLabelAttr) into gData["organisationLabel"]
+     put rigFormLabel("Recipient Email:", "recipientEmail", tLabelAttr) into gData["emailLabel"]
+     put rigFormLabel("Password:", "password", tLabelAttr) into gData["passwordLabel"]
+     put rigFormLabel("Confirm Password:", "passwordConfirm", tLabelAttr) into gData["passwordConfirmLabel"]
+
+     # SUBMIT
+     put "createSubmit" into tSubmitArr["name"]
+     put "Register" into tSubmitArr["value"]
+     put "createBtn" into tSubmitArr["id"]
+     put rigSubmitButton(tSubmitArr) into gData["createSubmit"]
+
+     # FORM VALIDATION
+     if rigFormValidRun("auth/createRecipient") is TRUE then
+          # GET ACCOUNT DATA
+          if $_POST is an array then
+            put 2 into tGroups["2"] -- MEMBERS GROUP
+            put 4 into tGroups["4"] -- RECIPIENTS GROUP
+            put "24" into tExtraData["type"]
+
+            put toLower(rigVarPOST("first")) && toLower(rigVarPOST("last")) into tUserName
+            put rigVarPOST("password") into tPassword
+            put rigVarPOST("recipientEmail") into tEmail
+            put tEmail into tExtraData["recipientEmail"]
+            put rigVarPOST("first") into tExtraData["firstName"]
+            put rigVarPOST("last") into tExtraData["lastName"]
+            put rigVarPOST("recipientOrganisation") into tExtraData["recipientOrganisation"]
+            put rigVarPOST("userType") into tCreateUserType
+
+            put toLower(tEmail) into tCheckEmail
+            if char -8 to -1 of tCheckEmail = "@nhs.net" then put TRUE into tDoRegister
+         end if
+
+         if tDoRegister = TRUE then -- only register if recipient email is 'nhs.net' or 'NHS.NET'
+            put rigAuthRegister(tUserName, tPassword, tEmail, tExtraData, tGroups) into tRegistration
+         else
+            put "You need an nhs.net email account to be a DiADeM Recipient!" into tMessage
+            --put "<div style=" & quote & "width:490px;background-color:LightYellow;padding:15px;margin:-20px;" & quote && "class=" & quote & "error" & quote & ">" & tMessage & "</div>") into tForceNHS
+            put tMessage into tForceNHS
+            put tForceNHS into gData["message"]
+            put false into tRegistration
+         end if
+
+          # CHECK REGISTRATION DATA
+          if tRegistration is an array then
+               rigLogMessage "debug", "identity:" && tRegistration["identity"]
+               rigLogMessage "debug", "id:" && tRegistration["id"]
+               rigLogMessage "debug", "email:" && tRegistration["email"]
+               rigLogMessage "debug", "activationCode:" && tRegistration["activationCode"]
+          else
+               rigLogMessage "debug", "tRegistration:" && tRegistration
+          end if
+          rigLogMessage "debug", "messages:" && rigAuthMessages()
+          #
+
+          # IF REGISTRATION WAS SUCCESSFUL REDIRECT TO AUTHENTICATION PAGE
+          if tRegistration <> FALSE then
+               put rigAuthMessages() into tMessages
+               rigSetSessFlashdata "message", tMessages
+               rigRedirect "/auth/createUserSuccess"
+          else
+               # LOAD VIEW
+               if tDoRegister <> TRUE then
+                  put rigAuthErrors() into tErrors
+                  rigSetSessFlashdata "message", tErrors
+                  rigRedirect "auth/createUserNotNhsEmail"
+               else
+                  put rigAuthErrors() into tErrors
+                  rigSetSessFlashdata "message", tErrors
+                  rigRedirect "auth/createRecipient"
+               end if
+          end if
+
+     else -- if rigFormValidRun("auth/createRecipient") is TRUE then
+
+          put rigValidationErrors("<div style=" & quote & "width:490px;background-color:LightYellow;padding:15px;margin:-20px;" & quote && "class=" & quote & "error" & quote & ">", "</div>") into tErrors
+          if tErrors <> empty then
+               put tErrors into gData["message"]
+          else
+               put rigSessFlashdata("message") into gData["message"]
+               if gData["message"] is FALSE then
+                    put empty into gData["message"]
+               end if
+          end if
+
+          # INPUT FIELDS
+          put "first" into tInFirstArr["name"]
+          # RE-POPULATE THE FIELD
+          put rigSetValue("first") into tInFirstArr["value"]
+          put "50" into tInFirstArr["maxlength"]
+          put rigFormInput(tInFirstArr) into gData["first"]
+
+          put "last" into tInLastArr["name"]
+          # RE-POPULATE THE FIELD
+          put rigSetValue("last") into tInLastArr["value"]
+          put "50" into tInLastArr["maxlength"]
+          put rigFormInput(tInLastArr) into gData["last"]
+
+          put "recipientOrganisation" into tInOrganisationArr["name"]
+          # RE-POPULATE THE FIELD
+          put rigSetValue("recipientOrganisation") into tInOrganisationArr["value"]
+          put "226" into tInOrganisationArr["maxlength"]
+          put "40" into tInOrganisationArr["size"]
+          put rigFormInput(tInOrganisationArr) into gData["recipientOrganisation"]
+
+          put "recipientEmail" into tInMailArr["name"]
+          # RE-POPULATE THE FIELD
+          put rigSetValue("recipientEmail") into tInMailArr["value"]
+          put "226" into tInMailArr["maxlength"]
+          put "40 " into tInMailArr["size"]
+          put rigFormInput(tInMailArr) into gData["recipientEmail"]
+
+          put "password" into tInPassArr["name"]
+          # RE-POPULATE THE FIELD
+          put rigSetValue("password") into tInPassArr["value"]
+          put "50" into tInPassArr["maxlength"]
+          put rigFormPassword(tInPassArr) into gData["password"]
+
+          put "passwordConfirm" into tInPassConfArr["name"]
+          # RE-POPULATE THE FIELD
+          put rigSetValue("passwordConfirm") into tInPassConfArr["value"]
+          put "50" into tInPassConfArr["maxlength"]
+          put rigFormPassword(tInPassConfArr) into gData["passwordConfirm"]
+
+          -- HIDDEN FIELD
+          put rigFormHidden("userType",tCreateUserType) into gData["userType"]
+     end if
+
+     # LOAD VIEW
+     get rigLoadView("auth/createUserMainView")
+end createRecipient
+
+
+
+
+command createClinicianRecipient
+
+   put "Register as both a Clinician Undertaking DiADeM Assessments and a Recipient of DiADeM Reports" into gData["pageTitle"]
+   put "Register as both a Clinician Undertaking DiADeM Assessments and a Recipient of DiADeM Reports" into gData["formTitle"]
+   put "This form is for those wishing to both create DiADeM reports on the DiADeM app as well as receive them at a GP Surgery." into gData["formMessage1"]
+   put "By registering here you will be able to log in on the DiAdeM app (please ask if you don't know how to get the DiADeM app) and carry out DiADeM assessments - as well as being able to receive DiADeM Reports. For more on being a 'Clinician Undertaking DiADeM Assessments' please click <a href=" & quote & "https://diademauth.code4health.org/composers" & quote & ">here.</a> For more on being a 'DiADeM Recipient' please click <a href=" & quote & "https://diademauth.code4health.org/recipients" & quote & ">here.</a>" into gData["formMessage2"]
+   put "For security reasons <b>an nhs.net email address is required</b> for DiADeM recipients. Please complete all fields with an asterisk beside them." into gData["formMessage3"]
+   put "clinicianRecipient" into gData["createUserType"]
+   put "DiADeM Clinician and Recipient" into gData["accountType"]
+
+     -- link to main auth view
+     if (rigAuthIsAdmin() is TRUE) then
+          put rigAnchor("auth/", "Back to Previous Page") into gData["authLink"]
+     else
+          put rigAnchor("auth/", "Back") into gData["authLink"]
+     end if
+
+     -- ALLOW PEOPLE TO (ATTEMPT TO) REGISTER AS NEW USERS
+     -- ALSO ALLOW ADMINS TO CREATE NEW USERS
+     if (rigAuthLoggedIn() is TRUE) then -- IF LOGGED IN
+          if (rigAuthIsAdmin() is not TRUE) then -- IF NOT AN ADMIN USER
+               rigRedirect "auth/" -- REDIRECT TO (LOGIN) PAGE
+          end if
+     end if
+
+     # FORM OPEN
+     put "authForm" into tFormAttr["id"]
+     put rigFormOpen("auth/createClinicianRecipient", tFormAttr) into gData["formOpen"]
+
+     # FIELD SET
+     put rigFormFieldset("") into gData["fsOpen"]
+     put rigFormFieldsetClose() into gData["fsClose"]
+
+     # FORM LABELS
+     put "formLabel" into tLabelAttr["class"]
+     put rigFormLabel("First Name:", "first", tLabelAttr) into gData["firstLabel"]
+     put rigFormLabel("Last Name:", "last", tLabelAttr) into gData["lastLabel"]
+     put rigFormLabel("Recipient Organisation:", "recipientOrganisation", tLabelAttr) into gData["organisationLabel"]
+     put rigFormLabel("Recipient Email:", "recipientEmail", tLabelAttr) into gData["emailLabel"]
+     put rigFormLabel("Password:", "password", tLabelAttr) into gData["passwordLabel"]
+     put rigFormLabel("Confirm Password:", "passwordConfirm", tLabelAttr) into gData["passwordConfirmLabel"]
+
+     # SUBMIT
+     put "createSubmit" into tSubmitArr["name"]
+     put "Register" into tSubmitArr["value"]
+     put "createBtn" into tSubmitArr["id"]
+     put rigSubmitButton(tSubmitArr) into gData["createSubmit"]
+
+     # FORM VALIDATION
+     if rigFormValidRun("auth/createClinicianRecipient") is TRUE then
+          # GET ACCOUNT DATA
+          if $_POST is an array then
+            put 2 into tGroups["2"] -- MEMBERS GROUP
+            put 3 into tGroups["3"] -- CLINICIANS GROUP
+            put 4 into tGroups["4"] -- RECIPIENTS GROUP
+            put "234" into tExtraData["type"]
+
+            put toLower(rigVarPOST("first")) && toLower(rigVarPOST("last")) into tUserName
+            put rigVarPOST("password") into tPassword
+            put rigVarPOST("recipientEmail") into tEmail
+            put tEmail into tExtraData["recipientEmail"]
+            put rigVarPOST("first") into tExtraData["firstName"]
+            put rigVarPOST("last") into tExtraData["lastName"]
+            put rigVarPOST("recipientOrganisation") into tExtraData["organisation"]
+            put rigVarPOST("recipientOrganisation") into tExtraData["recipientOrganisation"]
+            put rigVarPOST("userType") into tCreateUserType
+
+            put toLower(tEmail) into tCheckEmail
+            if char -8 to -1 of tCheckEmail = "@nhs.net" then put TRUE into tDoRegister
+         end if
+
+         if tDoRegister = TRUE then -- only register if recipient email is 'nhs.net' or 'NHS.NET'
+            put rigAuthRegister(tUserName, tPassword, tEmail, tExtraData, tGroups) into tRegistration
+         else
+            put "You need an nhs.net email account to be a DiADeM Recipient!" into tMessage
+            --put "<div style=" & quote & "width:490px;background-color:LightYellow;padding:15px;margin:-20px;" & quote && "class=" & quote & "error" & quote & ">" & tMessage & "</div>") into tForceNHS
+            put tMessage into tForceNHS
+            put tForceNHS into gData["message"]
+            put false into tRegistration
+         end if
+
+          # CHECK REGISTRATION DATA
+          if tRegistration is an array then
+               rigLogMessage "debug", "identity:" && tRegistration["identity"]
+               rigLogMessage "debug", "id:" && tRegistration["id"]
+               rigLogMessage "debug", "email:" && tRegistration["email"]
+               rigLogMessage "debug", "activationCode:" && tRegistration["activationCode"]
+          else
+               rigLogMessage "debug", "tRegistration:" && tRegistration
+          end if
+          rigLogMessage "debug", "messages:" && rigAuthMessages()
+          #
+
+          # IF REGISTRATION WAS SUCCESSFUL REDIRECT TO AUTHENTICATION PAGE
+          if tRegistration <> FALSE then
+               put rigAuthMessages() into tMessages
+               rigSetSessFlashdata "message", tMessages
+               rigRedirect "/auth/createUserSuccess"
+          else
+               # LOAD VIEW
+            if tDoRegister <> TRUE then
+               put rigAuthErrors() into tErrors
+               rigSetSessFlashdata "message", tErrors
+               rigRedirect "auth/createUserNotNhsEmail"
+            else
+               put rigAuthErrors() into tErrors
+               rigSetSessFlashdata "message", tErrors
+               rigRedirect "auth/createClinicianRecipient"
+            end if
+          end if
+
+     else -- if rigFormValidRun("auth/createRecipient") is TRUE then
+
+          put rigValidationErrors("<div style=" & quote & "width:490px;background-color:LightYellow;padding:15px;margin:-20px;" & quote && "class=" & quote & "error" & quote & ">", "</div>") into tErrors
+          if tErrors <> empty then
+               put tErrors into gData["message"]
+          else
+               put rigSessFlashdata("message") into gData["message"]
+               if gData["message"] is FALSE then
+                    put empty into gData["message"]
+               end if
+          end if
+
+          # INPUT FIELDS
+          put "first" into tInFirstArr["name"]
+          # RE-POPULATE THE FIELD
+          put rigSetValue("first") into tInFirstArr["value"]
+          put "50" into tInFirstArr["maxlength"]
+          put rigFormInput(tInFirstArr) into gData["first"]
+
+          put "last" into tInLastArr["name"]
+          # RE-POPULATE THE FIELD
+          put rigSetValue("last") into tInLastArr["value"]
+          put "50" into tInLastArr["maxlength"]
+          put rigFormInput(tInLastArr) into gData["last"]
+
+          put "recipientOrganisation" into tInOrganisationArr["name"]
+          # RE-POPULATE THE FIELD
+          put rigSetValue("recipientOrganisation") into tInOrganisationArr["value"]
+          put "226" into tInOrganisationArr["maxlength"]
+          put "40" into tInOrganisationArr["size"]
+          put rigFormInput(tInOrganisationArr) into gData["recipientOrganisation"]
+
+          put "recipientEmail" into tInMailArr["name"]
+          # RE-POPULATE THE FIELD
+          put rigSetValue("recipientEmail") into tInMailArr["value"]
+          put "226" into tInMailArr["maxlength"]
+          put "40 " into tInMailArr["size"]
+          put rigFormInput(tInMailArr) into gData["recipientEmail"]
+
+          put "password" into tInPassArr["name"]
+          # RE-POPULATE THE FIELD
+          put rigSetValue("password") into tInPassArr["value"]
+          put "50" into tInPassArr["maxlength"]
+          put rigFormPassword(tInPassArr) into gData["password"]
+
+          put "passwordConfirm" into tInPassConfArr["name"]
+          # RE-POPULATE THE FIELD
+          put rigSetValue("passwordConfirm") into tInPassConfArr["value"]
+          put "50" into tInPassConfArr["maxlength"]
+          put rigFormPassword(tInPassConfArr) into gData["passwordConfirm"]
+
+          -- HIDDEN FIELD
+          put rigFormHidden("userType",tCreateUserType) into gData["userType"]
+     end if
+
+     # LOAD VIEW
+     get rigLoadView("auth/createUserMainView")
+end createClinicianRecipient
+
+
+
+
+
+command createPartner
+
+   put "Register as a DiADeM Partner Organisation" into gData["pageTitle"]
+   put "Register as a DiADeM Partner Organisation" into gData["formTitle"]
+   put "This form is for those wishing to register as a partner organisation to the DiADeM project, thereby accessing the 'partner dashboard' of statistics about the project." into gData["formMessage1"]
+   put "By registering here you will be able to log in to this website and view a dashboard of project information and anonymised reports (functionality to be added). You will not be able to log in on the DiADeM app or receive DiADeM reports." into gData["formMessage2"]
+   put "Please complete all fields with an asterisk beside them." into gData["formMessage3"]
+   put "partner" into gData["createUserType"]
+   put "DiADeM Partner Organisation" into gData["accountType"]
+
+     -- link to main auth view
+     if (rigAuthIsAdmin() is TRUE) then
+          put rigAnchor("auth/", "Back to Previous Page") into gData["authLink"]
+     else
+          put rigAnchor("auth/", "Back") into gData["authLink"]
+     end if
+
+     -- ALLOW PEOPLE TO (ATTEMPT TO) REGISTER AS NEW USERS
+     -- ALSO ALLOW ADMINS TO CREATE NEW USERS
+     if (rigAuthLoggedIn() is TRUE) then -- IF LOGGED IN
+          if (rigAuthIsAdmin() is not TRUE) then -- IF NOT AN ADMIN USER
+               rigRedirect "auth/" -- REDIRECT TO (LOGIN) PAGE
+          end if
+     end if
+
+     # FORM OPEN
+     put "authForm" into tFormAttr["id"]
+     put rigFormOpen("auth/createPartner", tFormAttr) into gData["formOpen"]
+
+     # FIELD SET
+     put rigFormFieldset("") into gData["fsOpen"]
+     put rigFormFieldsetClose() into gData["fsClose"]
+
+     # FORM LABELS
+     put "formLabel" into tLabelAttr["class"]
+     put rigFormLabel("First Name:", "first", tLabelAttr) into gData["firstLabel"]
+     put rigFormLabel("Last Name:", "last", tLabelAttr) into gData["lastLabel"]
+     put rigFormLabel("Partner Organisation:", "organisation", tLabelAttr) into gData["organisationLabel"]
+     put rigFormLabel("Email:", "email", tLabelAttr) into gData["emailLabel"]
+     put rigFormLabel("Password:", "password", tLabelAttr) into gData["passwordLabel"]
+     put rigFormLabel("Confirm Password:", "passwordConfirm", tLabelAttr) into gData["passwordConfirmLabel"]
+
+     # SUBMIT
+     put "createSubmit" into tSubmitArr["name"]
+     put "Register" into tSubmitArr["value"]
+     put "createBtn" into tSubmitArr["id"]
+     put rigSubmitButton(tSubmitArr) into gData["createSubmit"]
+
+     # FORM VALIDATION
+     if rigFormValidRun("auth/createPartner") is TRUE then
+          # GET ACCOUNT DATA
+          if $_POST is an array then
+            put 2 into tGroups["2"] -- MEMBERS GROUP
+            put 6 into tGroups["6"] -- PARTNERS GROUP
+            put "26" into tExtraData["type"]
+
+            put toLower(rigVarPOST("first")) && toLower(rigVarPOST("last")) into tUserName
+            put rigVarPOST("password") into tPassword
+            put rigVarPOST("email") into tEmail
+            put rigVarPOST("first") into tExtraData["firstName"]
+            put rigVarPOST("last") into tExtraData["lastName"]
+            put rigVarPOST("organisation") into tExtraData["organisation"]
+            put rigVarPOST("userType") into tCreateUserType
+         end if
+
+            put rigAuthRegister(tUserName, tPassword, tEmail, tExtraData, tGroups) into tRegistration
+
+          # CHECK REGISTRATION DATA
+          if tRegistration is an array then
+               rigLogMessage "debug", "identity:" && tRegistration["identity"]
+               rigLogMessage "debug", "id:" && tRegistration["id"]
+               rigLogMessage "debug", "email:" && tRegistration["email"]
+               rigLogMessage "debug", "activationCode:" && tRegistration["activationCode"]
+          else
+               rigLogMessage "debug", "tRegistration:" && tRegistration
+          end if
+          rigLogMessage "debug", "messages:" && rigAuthMessages()
+          #
+
+          # IF REGISTRATION WAS SUCCESSFUL REDIRECT TO AUTHENTICATION PAGE
+          if tRegistration <> FALSE then
+               put rigAuthMessages() into tMessages
+               rigSetSessFlashdata "message", tMessages
+               rigRedirect "/auth/createUserSuccess"
+          else
+               # LOAD VIEW
+               put rigAuthErrors() into tErrors
+               rigSetSessFlashdata "message", tErrors
+               rigRedirect "auth/createPartner"
+          end if
+
+     else -- if rigFormValidRun("auth/createPartner") is TRUE then
+
+        put rigValidationErrors("<div style=" & quote & "width:490px;background-color:LightYellow;padding:15px;margin:-20px;" & quote && "class=" & quote & "error" & quote & ">", "</div>") into tErrors
+          if tErrors <> empty then
+               put tErrors into gData["message"]
+          else
+               put rigSessFlashdata("message") into gData["message"]
+               if gData["message"] is FALSE then
+                    put empty into gData["message"]
+               end if
+          end if
+
+          # INPUT FIELDS
+          put "first" into tInFirstArr["name"]
+          # RE-POPULATE THE FIELD
+          put rigSetValue("first") into tInFirstArr["value"]
+          put "50" into tInFirstArr["maxlength"]
+          put rigFormInput(tInFirstArr) into gData["first"]
+
+          put "last" into tInLastArr["name"]
+          # RE-POPULATE THE FIELD
+          put rigSetValue("last") into tInLastArr["value"]
+          put "50" into tInLastArr["maxlength"]
+          put rigFormInput(tInLastArr) into gData["last"]
+
+          put "organisation" into tInOrganisationArr["name"]
+          # RE-POPULATE THE FIELD
+          put rigSetValue("organisation") into tInOrganisationArr["value"]
+          put "226" into tInOrganisationArr["maxlength"]
+          put "40" into tInOrganisationArr["size"]
+          put rigFormInput(tInOrganisationArr) into gData["organisation"]
+
+          put "email" into tInMailArr["name"]
+          # RE-POPULATE THE FIELD
+          put rigSetValue("email") into tInMailArr["value"]
+          put "226" into tInMailArr["maxlength"]
+          put "40 " into tInMailArr["size"]
+          put rigFormInput(tInMailArr) into gData["email"]
+
+          put "password" into tInPassArr["name"]
+          # RE-POPULATE THE FIELD
+          put rigSetValue("password") into tInPassArr["value"]
+          put "50" into tInPassArr["maxlength"]
+          put rigFormPassword(tInPassArr) into gData["password"]
+
+          put "passwordConfirm" into tInPassConfArr["name"]
+          # RE-POPULATE THE FIELD
+          put rigSetValue("passwordConfirm") into tInPassConfArr["value"]
+          put "50" into tInPassConfArr["maxlength"]
+          put rigFormPassword(tInPassConfArr) into gData["passwordConfirm"]
+
+          -- HIDDEN FIELD
+          put rigFormHidden("userType",tCreateUserType) into gData["userType"]
+     end if
+
+     # LOAD VIEW
+     get rigLoadView("auth/createUserMainView")
+end createPartner
+
+
+
+
+
+command createPaperUser
+
+   put "Register to download a PDF of the original paper-based DiADeM tool" into gData["pageTitle"]
+   put "Register to download a PDF of the original paper-based DiADeM tool" into gData["formTitle"]
+   put "This form is for those wishing to download a PDF of the original paper-based DiADeM tool as created by Yorkshire & the Humber Quality Improvement Team in 2014" into gData["formMessage1"]
+   put "By registering here you will be able to log in at this website and download the PDF (functionality not yet in place). You will not be able to log in on the DiADeM app or receive DiADeM reports." into gData["formMessage2"]
+   put "Please complete all fields with an asterisk beside them." into gData["formMessage3"]
+   put "paperUser" into gData["createUserType"]
+   put "DiADeM Paper-tool User" into gData["accountType"]
+
+     -- link to main auth view
+     if (rigAuthIsAdmin() is TRUE) then
+          put rigAnchor("auth/", "Back to Previous Page") into gData["authLink"]
+     else
+          put rigAnchor("auth/", "Back") into gData["authLink"]
+     end if
+
+     -- ALLOW PEOPLE TO (ATTEMPT TO) REGISTER AS NEW USERS
+     -- ALSO ALLOW ADMINS TO CREATE NEW USERS
+     if (rigAuthLoggedIn() is TRUE) then -- IF LOGGED IN
+          if (rigAuthIsAdmin() is not TRUE) then -- IF NOT AN ADMIN USER
+               rigRedirect "auth/" -- REDIRECT TO (LOGIN) PAGE
+          end if
+     end if
+
+     # FORM OPEN
+     put "authForm" into tFormAttr["id"]
+     put rigFormOpen("auth/createPaperUser", tFormAttr) into gData["formOpen"]
+
+     # FIELD SET
+     put rigFormFieldset("") into gData["fsOpen"]
+     put rigFormFieldsetClose() into gData["fsClose"]
+
+     # FORM LABELS
+     put "formLabel" into tLabelAttr["class"]
+     put rigFormLabel("First Name:", "first", tLabelAttr) into gData["firstLabel"]
+     put rigFormLabel("Last Name:", "last", tLabelAttr) into gData["lastLabel"]
+     put rigFormLabel("Organisation:", "organisation", tLabelAttr) into gData["organisationLabel"]
+     put rigFormLabel("Email:", "recipientEmail", tLabelAttr) into gData["emailLabel"]
+     put rigFormLabel("Password:", "password", tLabelAttr) into gData["passwordLabel"]
+     put rigFormLabel("Confirm Password:", "passwordConfirm", tLabelAttr) into gData["passwordConfirmLabel"]
+
+     # SUBMIT
+     put "createSubmit" into tSubmitArr["name"]
+     put "Register" into tSubmitArr["value"]
+     put "createBtn" into tSubmitArr["id"]
+     put rigSubmitButton(tSubmitArr) into gData["createSubmit"]
+
+     # FORM VALIDATION
+     if rigFormValidRun("auth/createPaperUser") is TRUE then
+          # GET ACCOUNT DATA
+          if $_POST is an array then
+            put 2 into tGroups["2"] -- MEMBERS GROUP
+            put 8 into tGroups["8"] -- PAPERUSERS  GROUP
+            put "28" into tExtraData["type"]
+
+            put toLower(rigVarPOST("first")) && toLower(rigVarPOST("last")) into tUserName
+            put rigVarPOST("password") into tPassword
+            put rigVarPOST("email") into tEmail
+            put rigVarPOST("first") into tExtraData["firstName"]
+            put rigVarPOST("last") into tExtraData["lastName"]
+            put rigVarPOST("organisation") into tExtraData["organisation"]
+            put rigVarPOST("userType") into tCreateUserType
+         end if
+
+            put rigAuthRegister(tUserName, tPassword, tEmail, tExtraData, tGroups) into tRegistration
+
+          # CHECK REGISTRATION DATA
+          if tRegistration is an array then
+               rigLogMessage "debug", "identity:" && tRegistration["identity"]
+               rigLogMessage "debug", "id:" && tRegistration["id"]
+               rigLogMessage "debug", "email:" && tRegistration["email"]
+               rigLogMessage "debug", "activationCode:" && tRegistration["activationCode"]
+          else
+               rigLogMessage "debug", "tRegistration:" && tRegistration
+          end if
+          rigLogMessage "debug", "messages:" && rigAuthMessages()
+          #
+
+          # IF REGISTRATION WAS SUCCESSFUL REDIRECT TO AUTHENTICATION PAGE
+          if tRegistration <> FALSE then
+               put rigAuthMessages() into tMessages
+               rigSetSessFlashdata "message", tMessages
+               rigRedirect "/auth/createUserSuccess"
+          else
+               # LOAD VIEW
+               put rigAuthErrors() into tErrors
+               rigSetSessFlashdata "message", tErrors
+               rigRedirect "auth/createPaperUser"
+          end if
+
+     else -- if rigFormValidRun("auth/createPaperUser") is TRUE then
+
+        put rigValidationErrors("<div style=" & quote & "width:490px;background-color:LightYellow;padding:15px;margin:-20px;" & quote && "class=" & quote & "error" & quote & ">", "</div>") into tErrors
+          if tErrors <> empty then
+               put tErrors into gData["message"]
+          else
+               put rigSessFlashdata("message") into gData["message"]
+               if gData["message"] is FALSE then
+                    put empty into gData["message"]
+               end if
+          end if
+
+          # INPUT FIELDS
+          put "first" into tInFirstArr["name"]
+          # RE-POPULATE THE FIELD
+          put rigSetValue("first") into tInFirstArr["value"]
+          put "50" into tInFirstArr["maxlength"]
+          put rigFormInput(tInFirstArr) into gData["first"]
+
+          put "last" into tInLastArr["name"]
+          # RE-POPULATE THE FIELD
+          put rigSetValue("last") into tInLastArr["value"]
+          put "50" into tInLastArr["maxlength"]
+          put rigFormInput(tInLastArr) into gData["last"]
+
+          put "organisation" into tInOrganisationArr["name"]
+          # RE-POPULATE THE FIELD
+          put rigSetValue("organisation") into tInOrganisationArr["value"]
+          put "226" into tInOrganisationArr["maxlength"]
+          put "40" into tInOrganisationArr["size"]
+          put rigFormInput(tInOrganisationArr) into gData["organisation"]
+
+          put "email" into tInMailArr["name"]
+          # RE-POPULATE THE FIELD
+          put rigSetValue("email") into tInMailArr["value"]
+          put "226" into tInMailArr["maxlength"]
+          put "40 " into tInMailArr["size"]
+          put rigFormInput(tInMailArr) into gData["email"]
+
+          put "password" into tInPassArr["name"]
+          # RE-POPULATE THE FIELD
+          put rigSetValue("password") into tInPassArr["value"]
+          put "50" into tInPassArr["maxlength"]
+          put rigFormPassword(tInPassArr) into gData["password"]
+
+          put "passwordConfirm" into tInPassConfArr["name"]
+          # RE-POPULATE THE FIELD
+          put rigSetValue("passwordConfirm") into tInPassConfArr["value"]
+          put "50" into tInPassConfArr["maxlength"]
+          put rigFormPassword(tInPassConfArr) into gData["passwordConfirm"]
+
+          -- HIDDEN FIELD
+          put rigFormHidden("userType",tCreateUserType) into gData["userType"]
+     end if
+
+     # LOAD VIEW
+     get rigLoadView("auth/createUserMainView")
+end createPaperUser
+
+
+
+command createUserSuccess
+     put "Create User Success" into gData["pageTitle"]
+     put "Almost Registered!" into gData["createUserResultTitle"]
+  put "<p>Your account has been set up - all that remains now is for it to be activated.</p><p>We have just sent you an email (it may not arrive immediately, and it could be hiding in your Junk Folder). </p><p>When you do get it please to click the <b>activate your account</b> link in it, this will take you to this website again, activate your DiADeM account and open our login page - once you see the login page your account is activated (only login if you wish to).</p>" into gData["createUserResultMessage"]
+     get rigLoadView("auth/createUserResultMainView")
+end createUserSuccess
+
+
+
+
+command createUserNotNhsEmail
+   put "Create User Fail" into gData["pageTitle"]
+   put "An nhs.net email account is required" into gData["createUserResultTitle"]
+   put gData["checkOrganisationResultMessage"] --into tMessage
+   put "<p>You must have an nhs.net email account to act as a DiADeM Recipient.</p><p>You can use an ordinary email account to act as a 'Clinician undertaking DiADeM Assessments' - but for security reasons only nhs.net email accounts can be used to receive DiADeM reports.</p><p>Please try again using an nhs.net email address.</p>" into gData["createUserResultMessage"]
+   get rigLoadView("auth/createUserResultMainView")
+end createUserNotNhsEmail
+
+
+
+
+command createUserConfirmation
+     put "Create User Confirmation" into gData["pageTitle"]
+     put "Registration Confirmed!" into gData["createUserResultTitle"]
+  put "<p>Your email address has been verified and your DiADeM account has been activated.</p><p>We have just sent you a second email (it may not arrive immediately, and it could be hiding in your Junk Folder) containing useful information, links to more information and details of how to contact us.</p><p>Welcome to DiADeM</p>" into gData["createUserResultMessage"]
+     get rigLoadView("auth/createUserResultMainView")
+end createUserConfirmation
+
+
+
+
+command createUserFail
+     put "Create User Fail" into gData["pageTitle"]
+     put "There is an issue with your account creation" into gData["createUserResultTitle"]
+     put gData["checkOrganisationResultMessage"] --into tMessage
+     put "<p>There is an issue with the data you entered. Perhaps your email address was not entered correctly.</p><p>Please check your data and try again (copying and pasting can work well).</p>" into gData["createUserResultMessage"]
+     get rigLoadView("auth/createUserResultMainView")
+end createUserFail
+
+
+
+
+command login
+     put "Login" into gData["pageTitle"]
+
+     # FORM OPEN
+     put "authForm" into tFormAttr["id"]
+     put rigFormOpen("auth/login", tFormAttr) into gData["formOpen"]
+
+     # FIELD SET
+     put rigFormFieldset("") into gData["fsOpen"]
+     put rigFormFieldsetClose() into gData["fsClose"]
+
+     # FORM LABELS
+     put "formLabel" into tLabelAttr["class"]
+     put rigFormLabel("Email:", "identity", tLabelAttr) into gData["identityLabel"]
+     put rigFormLabel("Password:", "password", tLabelAttr) into gData["passwordLabel"]
+     put rigFormLabel("Remember me:", "remember", tLabelAttr) into gData["rememberLabel"]
+
+     # SUBMIT
+     put "loginSubmit" into tSubmitArr["name"]
+     put "Login" into tSubmitArr["value"]
+     put "loginBtn" into tSubmitArr["id"]
+     put rigSubmitButton(tSubmitArr) into gData["loginSubmit"]
+
+     # FORM VALIDATION
+     if rigFormValidRun("auth/login") is TRUE then
+
+          # CHECK IF USER IS LOGGING IN
+          # REMEMBER ME CHECK BOX
+          put FALSE into tRemember
+          # CHECK IF THERE IS A POST VARIABLE remember
+          put rigVarPost("remember") into tPostRemember
+          if tPostRemember <> FALSE then
+               # CHECK VALUE
+               if tPostRemember[1] is 1 then
+                    put TRUE into tRemember
+               end if
+          end if
+
+          get rigAuthLogin(rigVarPost("identity"), rigVarPost("password"), tRemember)
+
+          -- if login is successful then redirect to auth if an admin, otherwise to main
+          if it is TRUE then
+
+               put rigAuthMessages() into tMessages
+               rigSetSessFlashdata "message", tMessages
+               if rigAuthIsAdmin() then
+                  rigRedirect "/auth/viewAdminData"
+               else
+                  rigRedirect "/auth/viewOwnUserData"
+               end if
+          else
+               # IF LOGIN IS UNSUCCESSFUL REDIRECT BACK TO THE LOGIN PAGE
+               put rigAuthErrors() into tErrors
+               rigSetSessFlashdata "message", tErrors
+               rigRedirect "auth/login"
+          end if
+
+     else
+          # THE USER IS NOT LOGGING IN, SHOW THE LOGIN PAGE
+          # SHOW VALIDATION ERRORS OR FLASH DATA IF THERE IS ANY
+          put rigValidationErrors("<div style=" & quote & "width:490px;background-color:LightYellow;padding:15px;margin:-20px;" & quote && "class=" & quote & "error" & quote & ">", "</div>") into tErrors
+          if tErrors <> empty then
+               put tErrors into gData["message"]
+          else
+               put rigSessFlashdata("message") into gData["message"]
+               if gData["message"] is FALSE then
+                    put empty into gData["message"]
+               end if
+          end if
+
+          # INPUT FIELDS
+          put "identity" into tInIdentArr["name"]
+          # RE-POPULATE THE FIELD
+          put rigSetValue("identity") into tInIdentArr["value"]
+          put "100" into tInIdentArr["maxlength"]
+          put rigFormInput(tInIdentArr) into gData["identity"]
+
+          put "password" into tInPwArr["name"]
+          put "40" into tInPwArr["maxlength"]
+          put rigFormPassword(tInPwArr) into gData["loginPassword"]
+
+          # CHECKBOX
+          put rigSetCheckbox("remember[]", "1", TRUE) into gData["chbRemember"]
+
+          get rigLoadView("auth/loginMainView")
+
+     end if -- if rigFormValidRun("auth/login") is TRUE then
+end login
+
+
+
+
+command logout
+     # LOG USER OUT
+     rigAuthLogout
+
+     # REDIRECT TO THE LOGIN PAGE
+     put rigAuthMessages() into tMessages
+
+     rigSetSessFlashdata "message", tMessages
+     rigRedirect "auth/login"
+end logout
+
+
+
+command activate
+     # GET USER ID AND ACTIVATION CODE
+     put rigFetchSegment(3) into tID
+     put rigFetchSegment(4) into tCode
+     put FALSE into tActivation
+
+     # ACTIVATE USER
+     if tCode <> FALSE then
+          put rigAuthActivate(tID, tCode) into tActivation
+
+     else if rigAuthIsAdmin() is TRUE then
+          put rigAuthActivate(tID) into tActivation
+     end if
+
+     # CHECK IF ACTIVATION WAS SUCCESSFUL AND ACT ACCORDINGLY
+     if tActivation is TRUE then
+          # REDIRECT TO THE AUTH PAGE
+          put rigAuthMessages() into tMessages
+
+          rigSetSessFlashdata "message", tMessages
+          rigRedirect "/auth/createUserConfirmation"
+
+       -- send confirmation email
+         put sendConfirmationEmail(tID) into tSent
+         if tSent is not TRUE then
+         rigSetSessFlashdata "message", "Unable to send confirmation email"
+         end if
+     else
+          put rigAuthErrors() into tErrors
+          rigSetSessFlashdata "message", tErrors
+          rigRedirect "auth/forgotPassword"
+     end if
+end activate
+
+
+
+
+command deactivate
+     put "User Deactivation" into gData["pageTitle"]
+
+     put rigFetchSegment(3) into tID
+
+     # FORM OPEN
+     put "authForm" into tFormAttr["id"]
+     put rigFormOpen("auth/deactivate/" & tID, tFormAttr) into gData["formOpen"]
+
+     # FIELD SET
+     put rigFormFieldset("") into gData["fsOpen"]
+     put rigFormFieldsetClose() into gData["fsClose"]
+
+     # FORM LABELS
+     put "formLabel" into tLabelAttr["class"]
+     put rigFormLabel("Yes:", "confirm", tLabelAttr) into gData["confirmRadioYesLabel"]
+     put rigFormLabel("No:", "confirm", tLabelAttr) into gData["confirmRadioNoLabel"]
+
+     # SUBMIT
+     put "deactivateSubmit" into tSubmitArr["name"]
+     put "Submit" into tSubmitArr["value"]
+     put "submitBtn" into tSubmitArr["id"]
+     put rigSubmitButton(tSubmitArr) into gData["deactivateSubmit"]
+
+     # FORM VALIDATION
+     if rigFormValidRun("auth/deactivate") is TRUE then
+          put FALSE into tDeactivated
+
+          # CHECK IF DEACTIVATION WAS CONFIRMED
+          if rigVarPOST("confirm") is "yes" then
+
+               # VALIDATE THE REQUEST
+               if tID <> rigVarPOST("id") then
+                    rigLogMessage "error", "This user deactivation form post did not pass the security check.", TRUE
+               end if
+
+               # CHECK THE USER LEVEL
+               if (rigAuthLoggedIn() is TRUE) and (rigAuthIsAdmin() is TRUE) then
+                    put rigAuthDeactivate(tID) into tDeactivated
+               end if
+
+          end if
+
+          # GET AUTH MESSAGES AND REDIRECT TO THE AUTH PAGE
+          if tDeactivated is TRUE then
+               put rigAuthMessages() into tMessages
+          else
+               put rigAuthErrors() into tMessages
+          end if
+
+          rigSetSessFlashdata "message", tMessages
+          rigRedirect "/auth"
+
+     else
+          put rigValidationErrors("<div style=" & quote & "width:490px;background-color:LightYellow;padding:15px;margin:-20px;" & quote && "class=" & quote & "error" & quote & ">", "</div>") into tErrors
+          if tErrors <> empty then
+               put tErrors into gData["message"]
+          else
+               put rigSessFlashdata("message") into gData["message"]
+               if gData["message"] is FALSE then
+                    put empty into gData["message"]
+               end if
+          end if
+
+          # HIDDEN USER ID FIELD
+          put rigAuthUser(tID) into tQueryResult
+          if (tQueryResult <> FALSE) and (tQueryResult is an array) then
+               put rigDbRow() into tUserRow
+               put tUserRow["id"] into tUserID
+               put tUserRow["username"] into gData["userName"]
+          else
+               put empty into tUserID
+          end if
+          put rigFormHidden("id", tUserID) into gData["hiddenUserID"]
+
+          # RADIO BUTTONS
+          put rigSetRadio("confirm", "yes") into gData["confirmYes"]
+          put rigSetRadio("confirm", "no", TRUE) into gData["confirmNo"]
+
+          # LOAD VIEWS
+          get rigLoadView("auth/deactivateUserMainView")
+     end if
+end deactivate
+
+
+
+
+command forgotPassword
+     put "Forgot Password" into gData["pageTitle"]
+
+     put rigSessFlashdata("message") into gData["message"]
+
+     # FORM OPEN
+     put "authForm" into tFormAttr["id"]
+     put rigFormOpen("auth/forgotPassword/", tFormAttr) into gData["formOpen"]
+
+     # FIELD SET
+     put rigFormFieldset("") into gData["fsOpen"]
+     put rigFormFieldsetClose() into gData["fsClose"]
+
+     # FORM LABELS
+     put "formLabel" into tLabelAttr["class"]
+     put rigFormLabel("Email:", "email", tLabelAttr) into gData["emailLabel"]
+
+     # SUBMIT
+     put "forgotSubmit" into tSubmitArr["name"]
+     put "Submit" into tSubmitArr["value"]
+     put "forgotBtn" into tSubmitArr["id"]
+     put rigSubmitButton(tSubmitArr) into gData["forgotSubmit"]
+
+     # FORM VALIDATION
+     if rigFormValidRun("auth/forgotPassword") is TRUE then
+          # CALL THE rigAuthForgottenPassword FUNCTION TO SEND A RESET CODE TO THE USER
+          put rigAuthForgottenPassword(rigVarPOST("email")) into tResetPasswordSent
+
+          if tResetPasswordSent is TRUE then
+               put rigAuthMessages() into tMessages
+
+               rigSetSessFlashdata "message", tMessages
+               rigRedirect "/auth/login"
+          else
+               put rigAuthErrors() into tErrors
+
+               rigSetSessFlashdata "message", tErrors
+               rigRedirect "auth/forgotPassword"
+          end if
+
+     else
+          put rigValidationErrors("<div style=" & quote & "width:490px;background-color:LightYellow;padding:15px;margin:-20px;" & quote && "class=" & quote & "error" & quote & ">", "</div>") into tErrors
+          if tErrors <> empty then
+               put tErrors into gData["message"]
+          else
+               put rigSessFlashdata("message") into gData["message"]
+               if gData["message"] is FALSE then
+                    put empty into gData["message"]
+               end if
+          end if
+
+          # INPUT FIELDS
+          put "email" into tInMailArr["name"]
+          # RE-POPULATE THE FIELD
+          put rigSetValue("email") into tInMailArr["value"]
+          put "50" into tInMailArr["maxlength"]
+          put rigFormInput(tInMailArr) into gData["email"]
+     end if
+
+     # LOAD VIEW
+     get rigLoadView("auth/forgotPasswordMainView")
+end forgotPassword
+
+
+
+
+command resetPassword
+     put "Reset Password" into gData["pageTitle"]
+
+     put rigFetchSegment(3) into tForgottenPasswordCode
+
+     if tForgottenPasswordCode is FALSE then
+          rigShow404
+     end if
+
+     put rigAuthForgottenPasswordCheck(tForgottenPasswordCode) into tUser
+
+     if tUser <> FALSE then
+          put rigAuthFetchConfigItem("minLengthPassword") into tMinPasswordLength
+          put rigAuthFetchConfigItem("maxLengthPassword") into tMaxPasswordLength
+
+          # FORM OPEN
+          put "authForm" into tFormAttr["id"]
+          put rigFormOpen("auth/resetPassword/" & tForgottenPasswordCode, tFormAttr) into gData["formOpen"]
+
+          # FIELD SET
+          put rigFormFieldset("") into gData["fsOpen"]
+          put rigFormFieldsetClose() into gData["fsClose"]
+
+          # FORM LABELS
+          put "formLabel" into tLabelAttr["class"]
+          put rigFormLabel("New Password (at least" && tMinPasswordLength && "characters):", \
+                "newPassword", tLabelAttr) into gData["newPasswordLabel"]
+          put rigFormLabel("Confirm New Password:", "newPasswordConfirm", tLabelAttr) into gData["newPasswordConfirmLabel"]
+
+          # SUBMIT
+          put "resetSubmit" into tSubmitArr["name"]
+          put "Change" into tSubmitArr["value"]
+          put "resetBtn" into tSubmitArr["id"]
+          put rigSubmitButton(tSubmitArr) into gData["resetSubmit"]
+
+          # IF THE CODE IS VALID DISPLAY THE PASSWORD RESET FORM
+          # FORM VALIDATION
+          if rigFormValidRun("auth/resetPassword") is TRUE then
+
+               # VALIDATE THE REQUEST
+               if tUser["id"] <> rigVarPOST("hiddenUserID") then
+                    get rigAuthClearForgottenPasswordCode(tForgottenPasswordCode)
+                    rigLogMessage "error", "This reset password form post did not pass the security check.", TRUE
+
+               else
+                    # CHANGE THE PASSWORD
+                    put rigAuthFetchConfigItem("identityColumn") into tIdentityCol
+                    put tUser[tIdentityCol] into tIdentity
+
+                    put rigAuthResetPassword(tIdentity, rigVarPOST("newPassword")) into tChange
+
+                    if tChange is TRUE then
+                         # THE PASSWORD WAS SUCCESSFULLY CHANGED
+                         put rigAuthMessages() into tMessages
+
+                         rigSetSessFlashdata "message", tMessages
+                         logout
+
+                    else
+                         put rigAuthErrors() into tErrors
+
+                         rigSetSessFlashdata "message", tErrors
+                         rigRedirect "auth/resetPassword/" & tForgottenPasswordCode
+                    end if
+
+               end if
+
+          else
+               # DISPLAY THE FORM
+               # SET THE FLASH DATA ERROR MESSAGE IF THERE IS ONE
+               put rigValidationErrors("<div style=" & quote & "width:490px;background-color:LightYellow;padding:15px;margin:-20px;" & quote && "class=" & quote & "error" & quote & ">", "</div>") into tErrors
+               if tErrors <> empty then
+                    put tErrors into gData["message"]
+               else
+                    put rigSessFlashdata("message") into gData["message"]
+                    if gData["message"] is FALSE then
+                         put empty into gData["message"]
+                    end if
+               end if
+
+               # INPUT FIELDS
+               put "newPassword" into tInPassArr["name"]
+               put tMaxPasswordLength into tInPassArr["maxlength"]
+               put "password" into tInPassArr["type"]
+               put rigFormPassword(tInPassArr) into gData["newPassword"]
+
+               put "newPasswordConfirm" into tInPassConfArr["name"]
+               put tMaxPasswordLength into tInPassConfArr["maxlength"]
+               put "password" into tInPassConfArr["type"]
+               put rigFormPassword(tInPassConfArr) into gData["newPasswordConfirm"]
+
+               put "hiddenUserID" into tInUserIdArr["name"]
+               put tUser["id"] into tInUserIdArr["value"]
+               put "hidden" into tInUserIdArr["type"]
+               put rigFormInput(tInUserIdArr) into gData["hiddenUserID"]
+
+               # LOAD VIEW
+               get rigLoadView("auth/resetPasswordMainView")
+
+          end if -- if rigFormValidRun("auth/forgotPassword") is TRUE then
+
+          else  -- if tUser <> FALSE then
+               put rigAuthErrors() into tErrors
+
+               rigSetSessFlashdata "message", tErrors
+               rigRedirect "auth/forgotPassword"
+          end if -- if tUser <> FALSE then
+end resetPassword
+
+
+
+
+
+command changePassword
+     put "Change Password" into gData["pageTitle"]
+
+     # CHECK IF USER IS LOGGED IN
+     if rigAuthLoggedIn() is FALSE then
+          rigRedirect "/auth/login"
+     end if
+
+     # GET USER DATA
+     put rigAuthUser() into tQueryResult
+
+     if (tQueryResult <> FALSE) and (tQueryResult is an array) then
+          put rigDbRow() into tUser
+     end if
+
+     # GET MIN / MAX PASSWORD LENGTH
+     put rigAuthFetchConfigItem("minLengthPassword") into tMinPasswordLength
+     put rigAuthFetchConfigItem("maxLengthPassword") into tMaxPasswordLength
+
+     # FORM OPEN
+     put "authForm" into tFormAttr["id"]
+     put rigFormOpen("auth/changePassword/", tFormAttr) into gData["formOpen"]
+
+     # FIELD SET
+     put rigFormFieldset("Change Password Form") into gData["fsOpen"]
+     put rigFormFieldsetClose() into gData["fsClose"]
+
+     # FORM LABELS
+     put "formLabel" into tLabelAttr["class"]
+     put rigFormLabel("Old Password:", "oldPassword", tLabelAttr) into gData["oldPasswordLabel"]
+     put rigFormLabel("New Password (at least" && tMinPasswordLength && "characters):", \
+           "newPassword", tLabelAttr) into gData["newPasswordLabel"]
+     put rigFormLabel("Confirm New Password:", "newPasswordConfirm", tLabelAttr) into gData["newPasswordConfirmLabel"]
+
+     # SUBMIT
+     put "changeSubmit" into tSubmitArr["name"]
+     put "Change" into tSubmitArr["value"]
+     put "changeBtn" into tSubmitArr["id"]
+     put rigSubmitButton(tSubmitArr) into gData["changeSubmit"]
+
+     # FORM VALIDATION
+     if rigFormValidRun("auth/changePassword") is TRUE then
+          put rigAuthFetchConfigItem("identityColumn") into tIdentityCol
+          put rigSessUserdata(tIdentityCol) into tIdentity
+
+          put rigAuthChangePassword(tIdentity, rigVarPOST("oldPassword"), rigVarPOST("newPassword")) into tChange
+
+          if tChange is TRUE then
+               # THE PASSWORD WAS SUCCESSFULLY CHANGED
+               put rigAuthMessages() into tMessages
+
+               rigSetSessFlashdata "message", tMessages
+               logout
+
+          else
+               put rigAuthErrors() into tErrors
+
+               rigSetSessFlashdata "message", tErrors
+               rigRedirect "auth/changePassword/" & tForgottenPasswordCode
+          end if
+
+     else
+          # DISPLAY THE FORM
+          # SET THE FLASH DATA ERROR MESSAGE IF THERE IS ONE
+          put rigValidationErrors("<div style=" & quote & "width:490px;background-color:LightYellow;padding:15px;margin:-20px;" & quote && "class=" & quote & "error" & quote & ">", "</div>") into tErrors
+          if tErrors <> empty then
+               put tErrors into gData["message"]
+          else
+               put rigSessFlashdata("message") into gData["message"]
+               if gData["message"] is FALSE then
+                    put empty into gData["message"]
+               end if
+          end if
+
+          # INPUT FIELDS
+          put "oldPassword" into tInOldPassArr["name"]
+          put tMaxPasswordLength into tInOldPassArr["maxlength"]
+          put "password" into tInOldPassArr["type"]
+          put rigFormPassword(tInOldPassArr) into gData["oldPassword"]
+
+          put "newPassword" into tInPassArr["name"]
+          put tMaxPasswordLength into tInPassArr["maxlength"]
+          put "password" into tInPassArr["type"]
+          put rigFormPassword(tInPassArr) into gData["newPassword"]
+
+          put "newPasswordConfirm" into tInPassConfArr["name"]
+          put tMaxPasswordLength into tInPassConfArr["maxlength"]
+          put "password" into tInPassConfArr["type"]
+          put rigFormPassword(tInPassConfArr) into gData["newPasswordConfirm"]
+
+          put "hiddenUserID" into tInUserIdArr["name"]
+          put tUser["id"] into tInUserIdArr["value"]
+          put "hidden" into tInUserIdArr["type"]
+          put rigFormInput(tInUserIdArr) into gData["hiddenUserID"]
+
+          # LOAD VIEW
+          get rigLoadView("auth/changePasswordMainView")
+
+     end if -- if rigFormValidRun("auth/resetPassword") is TRUE then
+end changePassword
+
+
+
+
+
+command editUser
+     put "Edit User" into gData["pageTitle"]
+
+     # CHECK IF USER IS NOT LOGGED IN OR IF USER IS NOT ADMIN
+     if (rigAuthLoggedIn() is not TRUE) or (rigAuthIsAdmin() is not TRUE) then
+          # REDIRECT TO AUTH PAGE
+          rigRedirect "auth/"
+     end if
+
+     # GET MIN / MAX PASSWORD LENGTH
+     put rigAuthFetchConfigItem("minLengthPassword") into tMinPasswordLength
+     put rigAuthFetchConfigItem("maxLengthPassword") into tMaxPasswordLength
+
+     # GET USER ID
+     put rigFetchSegment(3) into tID
+
+     # GET STORED USER DATA
+     put rigAuthUser(tID) into tQueryResult
+     if (tQueryResult <> FALSE) and (tQueryResult is an array) then
+          put rigDbRow() into tUser
+     end if
+
+     # FORM OPEN
+     put "authForm" into tFormAttr["id"]
+     put rigFormOpen("auth/editUser/" & tID, tFormAttr) into gData["formOpen"]
+
+     # FIELD SET
+     put rigFormFieldset("") into gData["fsOpen"]
+     put rigFormFieldsetClose() into gData["fsClose"]
+
+     -- CHECK WHAT TYPE OF USER
+     put tUser["type"] into tType
+     if 4 is among the chars of tType then
+        put TRUE into tTreatAsRecipient
+        put "Recipient Organisation:" into tOrgLabel
+        put "recipientOrganisation" into tOrg
+     else
+        put "Organisation:" into tOrgLabel
+        put "organisation" into tOrg
+     end if
+
+
+     # FORM LABELS
+     put "formLabel" into tLabelAttr["class"]
+     put rigFormLabel("First Name:", "first", tLabelAttr) into gData["firstLabel"]
+     put rigFormLabel("Last Name:", "last", tLabelAttr) into gData["lastLabel"]
+     put rigFormLabel(tOrgLabel, "organisation", tLabelAttr) into gData["organisationLabel"]
+     put rigFormLabel("Password:", "password", tLabelAttr) into gData["passwordLabel"]
+     put rigFormLabel("Confirm Password:", "passwordConfirm", tLabelAttr) into gData["passwordConfirmLabel"]
+
+     # SUBMIT
+     put "editSubmit" into tSubmitArr["name"]
+     put "Save User" into tSubmitArr["value"]
+     put "editBtn" into tSubmitArr["id"]
+     put rigSubmitButton(tSubmitArr) into gData["editSubmit"]
+
+     # CHECK POST ARRAY DATA
+     if $_POST is an array then
+          # VALIDATE THE REQUEST
+          if tID <> rigVarPOST("hiddenUserID") then
+               rigLogMessage "error", "This form post did not pass the security check.", TRUE
+          end if
+
+          put rigVarPost("first") into tData["firstName"]
+          put rigVarPost("last") into tData["lastName"]
+          put rigVarPost("organisation") into tData[tOrg]
+
+          # UPDATE PASSWORD IF IT WAS POSTED
+          if rigVarPost("password") <> empty then
+               rigSetRules "password", "Password", \
+                     "requiredR|minLengthR[" & tMinPasswordLength & "]|maxLengthR[" & tMaxPasswordLength & "]|matchesR[passwordConfirm]|xssClean"
+               rigSetRules "passwordConfirm", "Confirm Password", "requiredR"
+
+               put rigVarPost("password") into tData["password"]
+          end if
+
+          # FORM VALIDATION
+          if rigFormValidRun("auth/editUser") is TRUE then
+               get rigAuthUpdate(tUser["id"], tData)
+
+               rigSetSessFlashdata "message", "User saved."
+               # REDIRECT TO AUTH PAGE
+               rigRedirect "auth/"
+          end if
+
+     end if -- if $_POST is an array then
+     put rigValidationErrors("<div style=" & quote & "width:490px;background-color:LightYellow;padding:15px;margin:-20px;" & quote && "class=" & quote & "error" & quote & ">", "</div>") into tErrors
+     if tErrors <> empty then
+          put tErrors into gData["message"]
+     else
+          put rigSessFlashdata("message") into gData["message"]
+          if gData["message"] is FALSE then
+               put empty into gData["message"]
+          end if
+     end if
+
+     # INPUT FIELDS
+     put "first" into tInFirstArr["name"]
+     # RE-POPULATE THE FIELD
+     put rigSetValue("first", tUser["firstName"]) into tInFirstArr["value"]
+     put "50" into tInFirstArr["maxlength"]
+     put rigFormInput(tInFirstArr) into gData["first"]
+
+     put "last" into tInLastArr["name"]
+     # RE-POPULATE THE FIELD
+     put rigSetValue("last", tUser["lastName"]) into tInLastArr["value"]
+     put "50" into tInLastArr["maxlength"]
+     put rigFormInput(tInLastArr) into gData["last"]
+
+     put "organisation" into tInOrganisationArr["name"]
+     # RE-POPULATE THE FIELD
+     put rigSetValue("organisation", tUser[tOrg]) into tInOrganisationArr["value"]
+     put "256" into tInOrganisationArr["maxlength"]
+     put "40" into tInOrganisationArr["size"]
+     put rigFormInput(tInOrganisationArr) into gData["organisation"]
+
+     put "password" into tInPassArr["name"]
+     # RE-POPULATE THE FIELD
+     put rigSetValue("password") into tInPassArr["value"]
+     put "50" into tInPassArr["maxlength"]
+     put rigFormPassword(tInPassArr) into gData["password"]
+
+     put "passwordConfirm" into tInPassConfArr["name"]
+     # RE-POPULATE THE FIELD
+     put rigSetValue("passwordConfirm") into tInPassConfArr["value"]
+     put "50" into tInPassConfArr["maxlength"]
+     put rigFormPassword(tInPassConfArr) into gData["passwordConfirm"]
+
+     put "hiddenUserID" into tInUserIdArr["name"]
+     put tID into tInUserIdArr["value"]
+     put "hidden" into tInUserIdArr["type"]
+     put rigFormInput(tInUserIdArr) into gData["hiddenUserID"]
+
+     # LOAD VIEW
+     get rigLoadView("auth/editUserMainView")
+
+end editUser
+
+
+
+
+
+command editOwnAccount
+   put "Editing Your Account" into gData["pageTitle"]
+
+   # GET USER ID
+      put rigFetchSegment(3) into tID
+
+   # GET STORED USER DATA
+   put rigAuthUser() into tQueryResult
+   if (tQueryResult <> FALSE) and (tQueryResult is an array) then
+      put rigDbRow() into tUser
+   end if
+
+   # CHECK IF USER IS NOT LOGGED IN OR IF NOT ON THEIR OWN ACCOUNT
+   if (rigAuthLoggedIn() is not TRUE) OR (tID <> tUser["id"]) then
+      # REDIRECT TO AUTH PAGE
+      rigRedirect "auth/"
+   end if
+
+     # GET MIN / MAX PASSWORD LENGTH
+     put rigAuthFetchConfigItem("minLengthPassword") into tMinPasswordLength
+     put rigAuthFetchConfigItem("maxLengthPassword") into tMaxPasswordLength
+
+     # FORM OPEN
+     put "authForm" into tFormAttr["id"]
+     put rigFormOpen("auth/editOwnAccount/" & tID, tFormAttr) into gData["formOpen"]
+
+     # FIELD SET
+     put rigFormFieldset("") into gData["fsOpen"]
+     put rigFormFieldsetClose() into gData["fsClose"]
+
+     -- CHECK WHAT TYPE OF USER
+     put tUser["type"] into tType
+     if 4 is among the chars of tType then
+        put TRUE into tTreatAsRecipient
+        put "Recipient Organisation:" into tOrgLabel
+        put "recipientOrganisation" into tOrg
+     else
+        put "Organisation:" into tOrgLabel
+        put "organisation" into tOrg
+     end if
+
+
+     # FORM LABELS
+     put "formLabel" into tLabelAttr["class"]
+     put rigFormLabel("First Name:", "first", tLabelAttr) into gData["firstLabel"]
+     put rigFormLabel("Last Name:", "last", tLabelAttr) into gData["lastLabel"]
+     put rigFormLabel(tOrgLabel, "organisation", tLabelAttr) into gData["organisationLabel"]
+     put rigFormLabel("Password:", "password", tLabelAttr) into gData["passwordLabel"]
+     put rigFormLabel("Confirm Password:", "passwordConfirm", tLabelAttr) into gData["passwordConfirmLabel"]
+
+     # SUBMIT
+     put "editSubmit" into tSubmitArr["name"]
+     put "Save Changes" into tSubmitArr["value"]
+     put "editBtn" into tSubmitArr["id"]
+     put rigSubmitButton(tSubmitArr) into gData["editSubmit"]
+
+     # CHECK POST ARRAY DATA
+     if $_POST is an array then
+          # VALIDATE THE REQUEST
+          if tID <> rigVarPOST("hiddenUserID") then
+               rigLogMessage "error", "This form post did not pass the security check.", TRUE
+          end if
+
+          put rigVarPost("first") into tData["firstName"]
+          put rigVarPost("last") into tData["lastName"]
+          put rigVarPost("organisation") into tData[tOrg]
+
+          # UPDATE PASSWORD IF IT WAS POSTED
+          if rigVarPost("password") <> empty then
+               rigSetRules "password", "Password", \
+                     "requiredR|minLengthR[" & tMinPasswordLength & "]|maxLengthR[" & tMaxPasswordLength & "]|matchesR[passwordConfirm]|xssClean"
+               rigSetRules "passwordConfirm", "Confirm Password", "requiredR"
+
+               put rigVarPost("password") into tData["password"]
+          end if
+
+          # FORM VALIDATION
+          if rigFormValidRun("auth/editOwnAccount") is TRUE then
+               get rigAuthUpdate(tUser["id"], tData)
+
+               rigSetSessFlashdata "message", "User saved."
+               # REDIRECT TO AUTH PAGE
+               rigRedirect "auth/"
+          end if
+
+     end if -- if $_POST is an array then
+     put rigValidationErrors("<div style=" & quote & "width:490px;background-color:LightYellow;padding:15px;margin:-20px;" & quote && "class=" & quote & "error" & quote & ">", "</div>") into tErrors
+     if tErrors <> empty then
+          put tErrors into gData["message"]
+     else
+          put rigSessFlashdata("message") into gData["message"]
+          if gData["message"] is FALSE then
+               put empty into gData["message"]
+          end if
+     end if
+
+     # INPUT FIELDS
+     put "first" into tInFirstArr["name"]
+     # RE-POPULATE THE FIELD
+     put rigSetValue("first", tUser["firstName"]) into tInFirstArr["value"]
+     put "50" into tInFirstArr["maxlength"]
+     put rigFormInput(tInFirstArr) into gData["first"]
+
+     put "last" into tInLastArr["name"]
+     # RE-POPULATE THE FIELD
+     put rigSetValue("last", tUser["lastName"]) into tInLastArr["value"]
+     put "50" into tInLastArr["maxlength"]
+     put rigFormInput(tInLastArr) into gData["last"]
+
+     put "organisation" into tInOrganisationArr["name"]
+     # RE-POPULATE THE FIELD
+     put rigSetValue("organisation", tUser[tOrg]) into tInOrganisationArr["value"]
+     put "256" into tInOrganisationArr["maxlength"]
+     put "40" into tInOrganisationArr["size"]
+     put rigFormInput(tInOrganisationArr) into gData["organisation"]
+
+     put "password" into tInPassArr["name"]
+     # RE-POPULATE THE FIELD
+     put rigSetValue("password") into tInPassArr["value"]
+     put "50" into tInPassArr["maxlength"]
+     put rigFormPassword(tInPassArr) into gData["password"]
+
+     put "passwordConfirm" into tInPassConfArr["name"]
+     # RE-POPULATE THE FIELD
+     put rigSetValue("passwordConfirm") into tInPassConfArr["value"]
+     put "50" into tInPassConfArr["maxlength"]
+     put rigFormPassword(tInPassConfArr) into gData["passwordConfirm"]
+
+     put "hiddenUserID" into tInUserIdArr["name"]
+     put tID into tInUserIdArr["value"]
+     put "hidden" into tInUserIdArr["type"]
+     put rigFormInput(tInUserIdArr) into gData["hiddenUserID"]
+
+     # LOAD VIEW
+     get rigLoadView("auth/editOwnAccountMainView")
+
+end editOwnAccount
+
+
+
+
+
+command viewOwnUserData
+   put "View Your Own Data User" into gData["pageTitle"]
+
+   # CHECK IF USER IS NOT LOGGED IN OR IF USER IS NOT ADMIN
+   if (rigAuthLoggedIn() is not TRUE) then
+      # REDIRECT TO AUTH PAGE
+      rigRedirect "auth/"
+   end if
+
+   --- POPULATE 'LOGIN/REGISTER' LINKS
+   put rigAuthUser() into tQueryResult
+   if (tQueryResult <> false) AND (tQueryResult is an array) then
+      put rigDBRow() into tUser
+      put "hi" && tUser["username"] into gData["hiusername"]
+      put rigAnchor("auth/logout", "logout?") into gData["loginAnchor"]
+      put empty into gData["registerAnchor"]
+   end if
+
+   put "My Account" into gData["ownUserDataTitle"]
+
+   put "<a class=" & quote & "btn btn-primary" & quote & \
+         " href=" & quote & "https://diademauth.code4health.org/auth/viewOwnUserData" & quote & ">" & \
+         "My Account &raquo;</a>" into gData["toMyAccount"]
+
+
+   --GET TYPES
+   put tUser["type"] into tTypes
+   put empty into tTypesString
+
+   if 3 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewClinicianData" & quote & ">" & \
+            "My Compositions &raquo;</a>" into gData["toClinicianData"]
+      put "Clinician Undertaking DiADeM Assessments, " after tTypesString
+   end if
+
+   if 4 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+          " href=" & quote & "https://diademauth.code4health.org/auth/viewRecipientData" & quote & ">" & \
+          "My DiADeM Reports &raquo;</a>" into gData["toRecipientData"]
+      put "DiADeM Recipient, " after tTypesString
+   end if
+
+   if 5 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewManagerData" & quote & ">" & \
+            "All Users &raquo;</a>" into gData["toManagerData1"]
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewManagerData2" & quote & ">" & \
+            "All Compositions &raquo;</a>" into gData["toManagerData2"]
+   end if
+
+   if 6 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+          " href=" & quote & "https://diademauth.code4health.org/auth/viewPartnerData" & quote & ">" & \
+          "Partner Data &raquo;</a>" into gData["toPartnerData"]
+      put "Partner Organisation, " after tTypesString
+   end if
+
+   if 7 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+          " href=" & quote & "https://diademauth.code4health.org/auth/viewAuditorData" & quote & ">" & \
+          "Auditor Data &raquo;</a>" into gData["toAuditorData"]
+      put "Auditor, " after tTypesString
+   end if
+
+   if 8 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+          " href=" & quote & "https://diademauth.code4health.org/auth/viewPaperUserData" & quote & ">" & \
+          "Paper-User Data &raquo;</a>" into gData["toPaperUserData"]
+      put "Paper User, " after tTypesString
+   end if
+   delete char -2 to -1 of tTypesString
+
+   -- MESSAGE
+   if tUser["active"] = 1 then put "active" into tStatus
+   else put "inactive" into tStatus
+
+   put "<p>First Name:" && tUser["firstName"] & "<br/>" & \
+      "Last Name:" && tUser["lastName"] & "<br/>" & \
+      "Email:" && tUser["email"] & "<br/>" & \
+      "Registration IP:" && tUser["ipAddress"] & "<br/>" & \
+      "DiADeM Status:" && tStatus & "<br/>" & \
+      "DiADeM Roles:" && tTypesString & "<br/>" & \
+      rigAnchor("auth/editOwnAccount/" & tUser["id"], "Edit Profile") && "(this link allows you to edit your first name, last name, organisation and password)</p>" into gData["ownUserDataMessage"]
+
+     # LOAD VIEW
+    get rigLoadView("auth/ownUserDataMainView")
+
+end viewOwnUserData
+
+
+
+
+command viewClinicianData
+     put "My DiADeM Compositions" into gData["pageTitle"]
+
+     # CHECK IF USER IS NOT LOGGED IN
+     if (rigAuthLoggedIn() is not TRUE) then rigRedirect "auth/"
+
+     -- POPULATE 'LOGIN/REGISTER' LINKS
+     put rigAuthUser() into tQueryResult
+         if (tQueryResult <> false) AND (tQueryResult is an array) then
+          put rigDBRow() into tUser
+          put "hi" && tUser["username"] into gData["hiusername"]
+          put rigAnchor("auth/logout", "logout?") into gData["loginAnchor"]
+          put empty into gData["registerAnchor"]
+     end if
+
+   put "DiADeM Clinician View" into gData["dataTitle"]
+   put "<p>You are using this as a registered DiAdeM Clinician</p>" into gData["dataMessage"]
+
+   put "<a class=" & quote & "btn btn-primary" & quote & \
+         " href=" & quote & "https://diademauth.code4health.org/auth/viewOwnUserData" & quote & ">" & \
+         "My Account &raquo;</a>" into gData["toMyAccount"]
+
+   --GET TYPES
+   put tUser["type"] into tTypes
+
+   if 3 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewClinicianData" & quote & ">" & \
+            "My Compositions &raquo;</a>" into gData["toClinicianData"]
+   else
+      rigRedirect "auth/"
+   end if
+
+   if 4 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewRecipientData" & quote & ">" & \
+            "My DiADeM Reports &raquo;</a>" into gData["toRecipientData"]
+   end if
+
+   if 5 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewManagerData" & quote & ">" & \
+            "All Users &raquo;</a>" into gData["toManagerData1"]
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewManagerData2" & quote & ">" & \
+            "All Compositions &raquo;</a>" into gData["toManagerData2"]
+   end if
+
+   if 6 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewPartnerData" & quote & ">" & \
+            "Partner Data &raquo;</a>" into gData["toPartnerData"]
+   end if
+
+   if 7 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewAuditorData" & quote & ">" & \
+            "Auditor Data &raquo;</a>" into gData["toAuditorData"]
+   end if
+
+   if 8 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewPaperUserData" & quote & ">" & \
+            "Paper-User Data &raquo;</a>" into gData["toPaperUserData"]
+   end if
+
+   put tUser["id"] into tId
+   put getUsersCompMetadata(tId) into gData["dataList"]
+
+  get rigLoadView("auth/dataMainView")
+
+end viewClinicianData
+
+
+
+
+
+command viewRecipientData
+     put "View DiADeM Recipient Managment Data" into gData["pageTitle"]
+
+     # CHECK IF USER IS NOT LOGGED IN
+     if (rigAuthLoggedIn() is not TRUE) then rigRedirect "auth/"
+
+     -- POPULATE 'LOGIN/REGISTER' LINKS
+     put rigAuthUser() into tQueryResult
+         if (tQueryResult <> false) AND (tQueryResult is an array) then
+          put rigDBRow() into tUser
+          put "hi" && tUser["username"] into gData["hiusername"]
+          put rigAnchor("auth/logout", "logout?") into gData["loginAnchor"]
+          put empty into gData["registerAnchor"]
+     end if
+
+   put "DiADeM Recipient View" into gData["dataTitle"]
+   put "<p>You are using this as a registered DiAdeM Recipient Manager</p>" into gData["dataMessage"]
+
+   put "<a class=" & quote & "btn btn-primary" & quote & \
+         " href=" & quote & "https://diademauth.code4health.org/auth/viewOwnUserData" & quote & ">" & \
+         "My Account &raquo;</a>" into gData["toMyAccount"]
+
+   --GET TYPES
+   put tUser["type"] into tTypes
+
+   if 3 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewClinicianData" & quote & ">" & \
+            "My Compositions &raquo;</a>" into gData["toClinicianData"]
+   else
+      rigRedirect "auth/"
+   end if
+
+   if 4 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewRecipientData" & quote & ">" & \
+            "My DiADeM Reports &raquo;</a>" into gData["toRecipientData"]
+   end if
+
+   if 5 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewManagerData" & quote & ">" & \
+            "All Users &raquo;</a>" into gData["toManagerData1"]
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewManagerData2" & quote & ">" & \
+            "All Compositions &raquo;</a>" into gData["toManagerData2"]
+   end if
+
+   if 6 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewPartnerData" & quote & ">" & \
+            "Partner Data &raquo;</a>" into gData["toPartnerData"]
+   end if
+
+   if 7 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewAuditorData" & quote & ">" & \
+            "Auditor Data &raquo;</a>" into gData["toAuditorData"]
+   end if
+
+   if 8 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewPaperUserData" & quote & ">" & \
+            "Paper-User Data &raquo;</a>" into gData["toPaperUserData"]
+   end if
+
+   -- XXXXX THIS IS A TEMPORARY ARRANGEMENT UNTIL I CHANGE WHAT DATA IS POSTED FROM THE APP
+   --put getRecipientData(tUser["id"]) into gData["dataList"]
+   put getRecipientData(tUser["recipientEmail"]) into gData["dataList"]
+
+  get rigLoadView("auth/dataMainView")
+
+end viewRecipientData
+
+
+
+
+command viewManagerData
+     put "View Project Managment Data" into gData["pageTitle"]
+
+     # CHECK IF USER IS NOT LOGGED IN
+     if (rigAuthLoggedIn() is not TRUE) then rigRedirect "auth/"
+
+     -- POPULATE 'LOGIN/REGISTER' LINKS
+     put rigAuthUser() into tQueryResult
+         if (tQueryResult <> false) AND (tQueryResult is an array) then
+          put rigDBRow() into tUser
+          put "hi" && tUser["username"] into gData["hiusername"]
+          put rigAnchor("auth/logout", "logout?") into gData["loginAnchor"]
+          put empty into gData["registerAnchor"]
+     end if
+
+   put "DiADeM Project Manager View - Users" into gData["dataTitle"]
+   put "<p>You are using this as a registered DiAdeM Project Manager</p>" into gData["dataMessage"]
+
+   put "<a class=" & quote & "btn btn-primary" & quote & \
+         " href=" & quote & "https://diademauth.code4health.org/auth/viewOwnUserData" & quote & ">" & \
+         "My Account &raquo;</a>" into gData["toMyAccount"]
+
+   --GET TYPES
+   put tUser["type"] into tTypes
+
+   if 3 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewClinicianData" & quote & ">" & \
+            "My Compositions &raquo;</a>" into gData["toClinicianData"]
+   else
+      rigRedirect "auth/"
+   end if
+
+   if 4 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewRecipientData" & quote & ">" & \
+            "My DiADeM Reports &raquo;</a>" into gData["toRecipientData"]
+   end if
+
+   if 5 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewManagerData" & quote & ">" & \
+            "All Users &raquo;</a>" into gData["toManagerData1"]
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewManagerData2" & quote & ">" & \
+            "All Compositions &raquo;</a>" into gData["toManagerData2"]
+   end if
+
+   if 6 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewPartnerData" & quote & ">" & \
+            "Partner Data &raquo;</a>" into gData["toPartnerData"]
+   end if
+
+   if 7 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewAuditorData" & quote & ">" & \
+            "Auditor Data &raquo;</a>" into gData["toAuditorData"]
+   end if
+
+   if 8 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewPaperUserData" & quote & ">" & \
+            "Paper-User Data &raquo;</a>" into gData["toPaperUserData"]
+   end if
+
+   put getManagerData1() into gData["dataList"]
+
+  get rigLoadView("auth/dataMainView")
+
+end viewManagerData
+
+
+
+
+command viewManagerData2
+     put "View Project Managment Data - Compositions" into gData["pageTitle"]
+
+     # CHECK IF USER IS NOT LOGGED IN
+     if (rigAuthLoggedIn() is not TRUE) then rigRedirect "auth/"
+
+     -- POPULATE 'LOGIN/REGISTER' LINKS
+     put rigAuthUser() into tQueryResult
+         if (tQueryResult <> false) AND (tQueryResult is an array) then
+          put rigDBRow() into tUser
+          put "hi" && tUser["username"] into gData["hiusername"]
+          put rigAnchor("auth/logout", "logout?") into gData["loginAnchor"]
+          put empty into gData["registerAnchor"]
+     end if
+
+   put "DiADeM Project Manager View - Compositions" into gData["dataTitle"]
+   put "<p>You are using this as a registered DiAdeM Project Manager</p>" into gData["dataMessage"]
+
+   put "<a class=" & quote & "btn btn-primary" & quote & \
+         " href=" & quote & "https://diademauth.code4health.org/auth/viewOwnUserData" & quote & ">" & \
+         "My Account &raquo;</a>" into gData["toMyAccount"]
+
+   --GET TYPES
+   put tUser["type"] into tTypes
+
+   if 3 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewClinicianData" & quote & ">" & \
+            "My Compositions &raquo;</a>" into gData["toClinicianData"]
+   else
+      rigRedirect "auth/"
+   end if
+
+   if 4 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewRecipientData" & quote & ">" & \
+            "My DiADeM Reports &raquo;</a>" into gData["toRecipientData"]
+   end if
+
+   if 5 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewManagerData" & quote & ">" & \
+            "All Users &raquo;</a>" into gData["toManagerData1"]
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewManagerData2" & quote & ">" & \
+            "All Compositions &raquo;</a>" into gData["toManagerData2"]
+   end if
+
+   if 6 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewPartnerData" & quote & ">" & \
+            "Partner Data &raquo;</a>" into gData["toPartnerData"]
+   end if
+
+   if 7 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewAuditorData" & quote & ">" & \
+            "Auditor Data &raquo;</a>" into gData["toAuditorData"]
+   end if
+
+   if 8 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewPaperUserData" & quote & ">" & \
+            "Paper-User Data &raquo;</a>" into gData["toPaperUserData"]
+   end if
+
+   put getManagerData2() into gData["dataList"]
+
+  get rigLoadView("auth/dataMainView")
+
+end viewManagerData2
+
+
+
+
+
+command viewPartnerData
+     put "View DiADeM Partner Organisation Data" into gData["pageTitle"]
+
+     # CHECK IF USER IS NOT LOGGED IN
+     if (rigAuthLoggedIn() is not TRUE) then rigRedirect "auth/"
+
+     -- POPULATE 'LOGIN/REGISTER' LINKS
+     put rigAuthUser() into tQueryResult
+         if (tQueryResult <> false) AND (tQueryResult is an array) then
+          put rigDBRow() into tUser
+          put "hi" && tUser["username"] into gData["hiusername"]
+          put rigAnchor("auth/logout", "logout?") into gData["loginAnchor"]
+          put empty into gData["registerAnchor"]
+     end if
+
+   put "DiADeM Partner Organisation View" into gData["dataTitle"]
+   put "<p>You are using this as a registered DiAdeM Partner Organisation</p>" into gData["dataMessage"]
+
+   put "<a class=" & quote & "btn btn-primary" & quote & \
+         " href=" & quote & "https://diademauth.code4health.org/auth/viewOwnUserData" & quote & ">" & \
+         "My Account &raquo;</a>" into gData["toMyAccount"]
+
+   --GET TYPES
+   put tUser["type"] into tTypes
+
+   if 3 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewClinicianData" & quote & ">" & \
+            "My Compositions &raquo;</a>" into gData["toClinicianData"]
+   else
+      rigRedirect "auth/"
+   end if
+
+   if 4 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewRecipientData" & quote & ">" & \
+            "My DiADeM Reports &raquo;</a>" into gData["toRecipientData"]
+   end if
+
+   if 5 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewManagerData" & quote & ">" & \
+            "All Users &raquo;</a>" into gData["toManagerData1"]
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewManagerData2" & quote & ">" & \
+            "All Compositions &raquo;</a>" into gData["toManagerData2"]
+   end if
+
+   if 6 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewPartnerData" & quote & ">" & \
+            "Partner Data &raquo;</a>" into gData["toPartnerData"]
+   end if
+
+   if 7 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewAuditorData" & quote & ">" & \
+            "Auditor Data &raquo;</a>" into gData["toAuditorData"]
+   end if
+
+   if 8 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewPaperUserData" & quote & ">" & \
+            "Paper-User Data &raquo;</a>" into gData["toPaperUserData"]
+   end if
+
+   put getPartnerData() into gData["dataList"]
+
+  get rigLoadView("auth/dataMainView")
+
+end viewPartnerData
+
+
+
+
+
+command viewAuditorData
+     put "View DiADeM Auditor Data" into gData["pageTitle"]
+
+     # CHECK IF USER IS NOT LOGGED IN
+     if (rigAuthLoggedIn() is not TRUE) then rigRedirect "auth/"
+
+     -- POPULATE 'LOGIN/REGISTER' LINKS
+     put rigAuthUser() into tQueryResult
+         if (tQueryResult <> false) AND (tQueryResult is an array) then
+          put rigDBRow() into tUser
+          put "hi" && tUser["username"] into gData["hiusername"]
+          put rigAnchor("auth/logout", "logout?") into gData["loginAnchor"]
+          put empty into gData["registerAnchor"]
+     end if
+
+   put "DiADeM Auditor View" into gData["dataTitle"]
+   put "<p>You are using this as a registered DiAdeM Auditor</p>" into gData["dataMessage"]
+
+   put "<a class=" & quote & "btn btn-primary" & quote & \
+         " href=" & quote & "https://diademauth.code4health.org/auth/viewOwnUserData" & quote & ">" & \
+         "My Account &raquo;</a>" into gData["toMyAccount"]
+
+   --GET TYPES
+   put tUser["type"] into tTypes
+
+   if 3 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewClinicianData" & quote & ">" & \
+            "My Compositions &raquo;</a>" into gData["toClinicianData"]
+   else
+      rigRedirect "auth/"
+   end if
+
+   if 4 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewRecipientData" & quote & ">" & \
+            "My DiADeM Reports &raquo;</a>" into gData["toRecipientData"]
+   end if
+
+   if 5 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewManagerData" & quote & ">" & \
+            "All Users &raquo;</a>" into gData["toManagerData1"]
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewManagerData2" & quote & ">" & \
+            "All Compositions &raquo;</a>" into gData["toManagerData2"]
+   end if
+
+   if 6 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewPartnerData" & quote & ">" & \
+            "Partner Data &raquo;</a>" into gData["toPartnerData"]
+   end if
+
+   if 7 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewAuditorData" & quote & ">" & \
+            "Auditor Data &raquo;</a>" into gData["toAuditorData"]
+   end if
+
+   if 8 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewPaperUserData" & quote & ">" & \
+            "Paper-User Data &raquo;</a>" into gData["toPaperUserData"]
+   end if
+
+   put getAuditorData() into gData["dataList"]
+
+  get rigLoadView("auth/dataMainView")
+
+end viewAuditorData
+
+
+
+
+
+command viewPaperUserData
+     put "View DiADeM Paper-User Data" into gData["pageTitle"]
+
+     # CHECK IF USER IS NOT LOGGED IN
+     if (rigAuthLoggedIn() is not TRUE) then rigRedirect "auth/"
+
+     -- POPULATE 'LOGIN/REGISTER' LINKS
+     put rigAuthUser() into tQueryResult
+         if (tQueryResult <> false) AND (tQueryResult is an array) then
+          put rigDBRow() into tUser
+          put "hi" && tUser["username"] into gData["hiusername"]
+          put rigAnchor("auth/logout", "logout?") into gData["loginAnchor"]
+          put empty into gData["registerAnchor"]
+     end if
+
+   put "DiADeM Paper-User View" into gData["dataTitle"]
+   put "<p>You are using this as a registered DiAdeM Paper-User</p>" into gData["dataMessage"]
+
+   put "<a class=" & quote & "btn btn-primary" & quote & \
+         " href=" & quote & "https://diademauth.code4health.org/auth/viewOwnUserData" & quote & ">" & \
+         "My Account &raquo;</a>" into gData["toMyAccount"]
+
+   --GET TYPES
+   put tUser["type"] into tTypes
+
+   if 3 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewClinicianData" & quote & ">" & \
+            "My Compositions &raquo;</a>" into gData["toClinicianData"]
+   else
+      rigRedirect "auth/"
+   end if
+
+   if 4 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewRecipientData" & quote & ">" & \
+            "My DiADeM Reports &raquo;</a>" into gData["toRecipientData"]
+   end if
+
+   if 5 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewManagerData" & quote & ">" & \
+            "All Users &raquo;</a>" into gData["toManagerData1"]
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewManagerData2" & quote & ">" & \
+            "All Compositions &raquo;</a>" into gData["toManagerData2"]
+   end if
+
+   if 6 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewPartnerData" & quote & ">" & \
+            "Partner Data &raquo;</a>" into gData["toPartnerData"]
+   end if
+
+   if 7 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewAuditorData" & quote & ">" & \
+            "Auditor Data &raquo;</a>" into gData["toAuditorData"]
+   end if
+
+   if 8 is among the chars of tTypes then
+      put "<a class=" & quote & "btn btn-primary" & quote & \
+            " href=" & quote & "https://diademauth.code4health.org/auth/viewPaperUserData" & quote & ">" & \
+            "Paper-User Data &raquo;</a>" into gData["toPaperUserData"]
+   end if
+
+   put getPaperUserData() into gData["dataList"]
+
+  get rigLoadView("auth/dataMainView")
+
+end viewPaperUserData
+
+
+
+
+
+command viewAdminData
+     put "View Admin Data" into gData["pageTitle"]
+
+     # CHECK IF USER IS NOT LOGGED IN OR IF USER IS NOT ADMIN
+     if (rigAuthLoggedIn() is not TRUE) then rigRedirect "auth/"
+     if (rigAuthisAdmin() is not TRUE) then rigRedirect "auth/"
+
+     ---- POPULATE 'LOGIN/REGISTER' LINKS
+     put rigAuthUser() into tQueryResult
+         if (tQueryResult <> false) AND (tQueryResult is an array) then
+          put rigDBRow() into tUser
+          put "hi" && tUser["username"] into gData["hiusername"]
+          put rigAnchor("auth/logout", "logout?") into gData["loginAnchor"]
+          put empty into gData["registerAnchor"]
+     end if
+
+   put "Logged in as a DiADeM Admin" into gData["ownUserDataTitle"]
+
+   if tUser["active"] = 1 then put "active" into tStatus
+   else put "inactive" into tStatus
+
+   put "<p>First Name:" && tUser["firstName"] & "<br/>" & \
+      "Last Name:" && tUser["lastName"] & "<br/>" & \
+      "Email:" && tUser["email"] & "<br/>" & \
+      "Registration IP:" && tUser["ipAddress"] & "<br/>" & \
+      "Status:" && tStatus & "</p>" into gData["adminDataMessage"]
+
+   put getAdminData() into gData["adminDataList"]
+
+
+     # LOAD VIEW
+     get rigLoadView("auth/adminDataMainView")
+
+end viewAdminData
+
+
+
+
+command deleteUser
+     put "Delete User" into gData["pageTitle"]
+
+     put rigFetchSegment(3) into tID
+
+     # FORM OPEN
+     put "authForm" into tFormAttr["id"]
+     put rigFormOpen("auth/deleteUser/" & tID, tFormAttr) into gData["formOpen"]
+
+     # FIELD SET
+     put rigFormFieldset("") into gData["fsOpen"]
+     put rigFormFieldsetClose() into gData["fsClose"]
+
+     # FORM LABELS
+     put "formLabel" into tLabelAttr["class"]
+     put rigFormLabel("Yes:", "confirm", tLabelAttr) into gData["confirmRadioYesLabel"]
+     put rigFormLabel("No:", "confirm", tLabelAttr) into gData["confirmRadioNoLabel"]
+
+     # SUBMIT
+     put "deleteSubmit" into tSubmitArr["name"]
+     put "Submit" into tSubmitArr["value"]
+     put "submitBtn" into tSubmitArr["id"]
+     put rigSubmitButton(tSubmitArr) into gData["deleteSubmit"]
+
+     # FORM VALIDATION
+     if rigFormValidRun("auth/deleteUser") is TRUE then
+          put FALSE into tDeleted
+
+          # CHECK IF DEACTIVATION WAS CONFIRMED
+          if rigVarPOST("confirm") is "yes" then
+
+               # VALIDATE THE REQUEST
+               if tID <> rigVarPOST("id") then
+                    rigLogMessage "error", "This form post did not pass the security check.", TRUE
+               end if
+
+               # CHECK THE USER LEVEL
+               if (rigAuthLoggedIn() is TRUE) and (rigAuthIsAdmin() is TRUE) then
+                    put rigAuthDeleteUser(tID) into tDeleted
+               end if
+
+          end if
+
+          # GET AUTH MESSAGES AND REDIRECT TO THE AUTH PAGE
+          if tDeleted is TRUE then
+               put rigAuthMessages() into tMessages
+          else
+               put rigAuthErrors() into tMessages
+          end if
+
+          rigSetSessFlashdata "message", tMessages
+          rigRedirect "/auth"
+
+     else
+          put rigValidationErrors("<div style=" & quote & "width:490px;background-color:LightYellow;padding:15px;margin:-20px;" & quote && "class=" & quote & "error" & quote & ">", "</div>") into tErrors
+          if tErrors <> empty then
+               put tErrors into gData["message"]
+          else
+               put rigSessFlashdata("message") into gData["message"]
+               if gData["message"] is FALSE then
+                    put empty into gData["message"]
+               end if
+          end if
+
+          # HIDDEN USER ID FIELD
+          put rigAuthUser(tID) into tQueryResult
+
+          if (tQueryResult <> FALSE) and (tQueryResult is an array) then
+               put rigDbRow() into tUserRow
+               put tUserRow["id"] into tUserID
+               put tUserRow["username"] into gData["userName"]
+          else
+               put empty into tUserID
+          end if
+          put rigFormHidden("id", tUserID) into gData["hiddenUserID"]
+
+          # RADIO BUTTONS
+          put rigSetRadio("confirm", "yes") into gData["confirmYes"]
+          put rigSetRadio("confirm", "no", TRUE) into gData["confirmNo"]
+
+          # LOAD VIEW
+          get rigLoadView("auth/deleteUserMainView")
+     end if
+end deleteUser
+
+
+
+
+function sendConfirmationEmail pId
+   put rigAuthUser(pId) into tQueryResult
+   if (tQueryResult <> FALSE) and (tQueryResult is an array) then
+      put rigDbRow() into tUser
+      put tUser["username"] into tUsername
+      put tUser["email"] into tTo
+      put the keys of tUser into tKeys
+      put rigAuthUserGroups(pId) into tQueryResult
+      if (tQueryResult <> FALSE) and (tQueryResult is an array) then
+         put tQueryResult into tGroups
+         repeat for each key k in tGroups
+            put tGroups[k][1] & comma after tList
+         end repeat
+
+         if 4 is among the chars of tList then put "Recipient of DiADeM Reports" into tUserType
+         if 3 is among the chars of tList then
+            if 4 is among the chars of tList then
+               put "Clinician Undertaking DiADeM Assessments and Recipient of DiADeM Reports" into tUserType
+            else
+               put "Clinician Undertaking DiADeM Assessments" into tUserType
+            end if
+         end if
+         if 5 is among the chars of tList then put "DiADeM Project Manager" into tUserType
+         if 6 is among the chars of tList then put "DiADeM Partner Organisation" into tUserType
+         if 7 is among the chars of tList then put "DiADeM Auditor" into tUserType
+         if 8 is among the chars of tList then put "DiADeM Paper-tool User" into tUserType
+
+         switch tUserType
+            case "Clinician Undertaking DiADeM Assessments"
+               put "As a Clinician Undertaking DiADeM Assessments you can use the DiADeM app (iOS and Android versions availalbe) to carry out interviews with patients in carehome settings and on completion post the result to the DiADeM server - which will then become available to the GP Surgery you selected." into tEmailConfirmationMessage1
+               put "For more on what a Clinician Undertaking DiADeM Assessments can do please visit https://diademauth.code4health.org/composers" into tEmailConfirmationMessage2
+               put "To get the DiADeM app on an Apple device please see the email you should have received from TestFlight (if you have no email from TestFlight please get in touch with us). To get the app on an Android device visit: <a href=" & quote & "https://play.google.com/store/apps/details?id=com.applicationinsight.diadem" & quote & ">here</a> on your Android device. Once installed, login to the app using the same email address and password you used while registering with us" into tEmailConfirmationMessage3
+               break
+
+            case "Recipient of DiADeM Reports"
+               put "As a DiADeM Recipient you receive DiADeM Reports on patients in your practice that have been created by a Clinician Undertaking DiADeM Assessments." into tEmailConfirmationMessage1
+               put "For more on what a DiADeM Recipient can do please visit https://diademauth.code4health.org/recipients" into tEmailConfirmationMessage2
+               put "Just to remind you, others will be using the DiADeM app to send you DiADeM Reports so please look out for emails from 'DiADeM' to the email address you entered as the 'Recipient Email' with us containing this important patient-related data." into tEmailConfirmationMessage3
+               break
+
+            case "Clinician Undertaking DiADeM Assessments and Recipient of DiADeM Reports"
+               put "As both a Clinician Undertaking DiADeM Assessments and a Recipient of DiADeM Reports you can: use the DiADeM app (iOS and Android versions availalbe) to carry out interviews with patients in carehome settings and on completion post the result to the DiADeM server, as well as receive DiADeM Reports on patients that have been linked to your practice." into tEmailConfirmationMessage1
+               put "For more on what a Clinician Undertaking DiADeM Assessments and Recipient of DiADeM Reports can do please visit https://diademauth.code4health.org/composers and https://diademauth.code4health.org/recipients" into tEmailConfirmationMessage2
+               put "To get the DiADeM app on an Apple device please see the email you should have received from TestFlight (if you have no email from TestFlight please get in touch with us). To get the app on an Android device visit: <a href=" & quote & "https://play.google.com/store/apps/details?id=com.applicationinsight.diadem" & quote & ">here</a> on your Android device. Once installed, login to the app using the same email address and password you used while registering with us" into tEmailConfirmationMessage3
+               break
+
+            case "DiADeM Project Manager"
+               break
+
+            case "DiADeM Partner Organisation"
+               put "As a DiADeM Partner you will be able to access the 'project dashboard' and view statistics about the project when you log in to https://diademauth.code4health.org - you will not be able to view any patient identifiable data." into tEmailConfirmationMessage1
+               put "For more on the DiADeM project please visit https://diadem.code4health.org" into tEmailConfirmationMessage2
+               put "Note: if you later decide you would like to give the DiADeM app a try, you'll need to register with us again with a different email address or let us know so we can zap your current account so you can register with us afresh." into tEmailConfirmationMessage3
+               break
+
+            case "DiADeM Auditor"
+               break
+
+            case "DiADeM Paper-tool User"
+               put "As a DiADeM Paper-tool User you can download PDF copies of the orignal DiADeM paper tool when you login at https://diademauth.code4health.org (functionality not yet in place). Please note that as a paper-tool user you will not be able to use the DiADeM app or view DiADeM Reports." into tEmailConfirmationMessage1
+               put "For more on the DiADeM project please visit https://diadem.code4health.org" into tEmailConfirmationMessage2
+               put "Note: if you later decide you would like to give the DiADeM app a try, you'll need to register with us again with a different email address or let us know so we can zap your current account so you can register with us afresh." into tEmailConfirmationMessage3
+               break
+         end switch
+      end if
+   end if
+
+   put convertSecs(tSecs) into tDateTime
+   rigClearMail --resets all email variables to empty
+   put "sendmail" into tConfig["protocol"]
+   put "html" into tConfig["mailtype"]
+   rigInitializeMail tConfig
+
+   put "DiADeM Web Service" into tFrom
+   put "noreply@diademauth.code4health.org" into tReplyTo
+   put "DiADeM Web Service - confirming your registration as a" && tUserType into tSubject
+   put "<h2>Confirming your new DiADeM account</h2>" & \
+      "<p>Dear" && tUser["firstName"] && tUser["lastName"] & "</p>" & \
+      "<p>Welcome to DiADeM! Your <b>" & tUserType & "</b> account is now active.</p>" & \
+      "<p>" & tEmailConfirmationMessage1 & "</p>" & \
+      "<p>" & tEmailConfirmationMessage2 &"</p>" & \
+      "<p>" & tEmailConfirmationMessage3 &"</p>" & \
+      "<p>Thank you</p>" & \
+      "<p style=" & quote & "margin-top:30" & quote & ">The DiADeM Web Service<br/>https://diademauth.code4health.org</p>" & \
+      "<p style=" & quote & "margin-top:30" & quote & ">Note: Do not reply to this email if you wish to get in contact with the project - use the form at https://diademauth.code4health.org/contact instead</p>" into tMessage
+
+   rigMailFrom tReplyTo, tFrom
+   rigMailTo tTo
+   --rigMailCC "dakilroy@gmail.com"
+   rigMailSubject tSubject --"Message from https://diademauth.code4health.org" #tSubject2
+   rigMailMessage tMessage
+   put rigMailSend() into tMailResult
+   put rigPrintMailDebugger() into gData["mailDebug"]
+   if tMailResult = TRUE then
+      return TRUE
+   else
+      return FALSE
+   end if
+end sendConfirmationEmail
+
+
+
+
+
+
+--| END OF auth.lc
+--| Location: ./system/application/controllers/auth.lc
+----------------------------------------------------------------------

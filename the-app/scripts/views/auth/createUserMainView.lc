@@ -1,0 +1,32 @@
+<?
+put "<div style=" & quote & "margin-left:25px;margin-top:25px;margin-bottom:100px" & quote & ">" into tDivStart
+put "</div>" into tDivStop
+
+put rigLoadView("mainheader", TRUE) into tHeader
+put rigLoadView("navview", TRUE) into tNav
+
+switch gData["createUserType"]
+   case "clinician"
+      put "createUserClinicianView" into tType
+      break
+   case "recipient"
+      put "createUserRecipientView" into tType
+      break
+   case "clinicianRecipient"
+      put "createUserClinicianRecipientView" into tType
+      break
+   case "partner"
+      put "createUserPartnerView" into tType
+      break
+   case "paperUser"
+      put "createUserPaperToolView" into tType
+      break
+   default
+      put "createUserView" into tType
+end switch
+
+put tDivStart & rigLoadView("auth/" & tType, TRUE) & tDivStop into tContent
+put rigLoadView("mainfooter", TRUE) into tFooter
+
+return tHeader && tNav && tContent && tFooter
+?>

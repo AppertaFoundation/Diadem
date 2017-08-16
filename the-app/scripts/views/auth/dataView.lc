@@ -1,0 +1,28 @@
+<body>
+
+	<div id="container" class="createUser" style="margin-top:70px">
+    <header>
+		<h2>[[gData["dataTitle"] ]]</h2>
+		[[gData["dataMessage"] ]]
+	</header>
+
+		<p>
+		[[gData["toMyAccount"] ]]
+		[[gData["toClinicianData"] ]]
+		[[gData["toRecipientData"] ]]
+		[[gData["toManagerData1"] ]]
+		[[gData["toManagerData2"] ]]
+		[[gData["toPartnerData"] ]]
+		[[gData["toAuditorData"] ]]
+		[[gData["toPaperUserData"] ]]
+		[[gData["toAdminData"] ]]
+		</p>
+
+	<div class="panel panel-default">
+	 	[[gData["dataList"] ]]
+ 	</div>
+
+	</div> <!--! end of #container -->
+
+</body>
+</html>

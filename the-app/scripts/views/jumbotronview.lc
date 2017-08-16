@@ -1,0 +1,63 @@
+	<div id="carousel-example-generic" class="carousel slide" data-ride="carousel" style="max-width:400px;margin:0 auto">
+
+		<!-- Indicators -->
+		<ol class="carousel-indicators">
+			<li data-target="#carousel-example-generic" data-slide-to="0" class="active"></li>
+			<li data-target="#carousel-example-generic" data-slide-to="1"></li>
+			<li data-target="#carousel-example-generic" data-slide-to="2"></li>
+			<li data-target="#carousel-example-generic" data-slide-to="3"></li>
+			<li data-target="#carousel-example-generic" data-slide-to="4"></li>
+			<li data-target="#carousel-example-generic" data-slide-to="5"></li>
+			<li data-target="#carousel-example-generic" data-slide-to="6"></li>
+		</ol>
+
+		<!-- Wrapper for slides -->
+		<div class="carousel-inner" al>
+			<div class="item active">
+				<img src="https://hello-world.org.uk/assets/img/carosel1.jpg" alt="first slide">
+				<div class="carousel-caption">
+					<h3>[[gData["pageHeading"] ]]</h3>
+				</div>
+			</div>
+			<div class="item">
+				<img src="https://hello-world.org.uk/assets/img/carosel2.jpg" alt="second slide">
+				<div class="carousel-caption">
+					<h3>Scratch is a drag 'n drop way to code</h3>
+				</div>
+			</div>
+			<div class="item">
+				<img src="https://hello-world.org.uk/assets/img/carosel3.jpg" alt="third slide">
+				<div class="carousel-caption">
+					<h3>the kids enjoys themselves</h3>
+				</div>
+			</div>
+			<div class="item">
+				<img src="https://hello-world.org.uk/assets/img/carosel4.jpg" alt="fourth slide">
+				<div class="carousel-caption">
+					<h3>volunteers also have fun</h3>
+				</div>
+			</div>
+			<div class="item">
+				<img src="https://hello-world.org.uk/assets/img/carosel5.jpg" alt="fifth slide">
+				<div class="carousel-caption">
+					<h3>the kids find it interesting</h3>
+				</div>
+			</div>
+			<div class="item">
+				<img src="https://hello-world.org.uk/assets/img/carosel6.jpg" alt="sixth slide">
+				<div class="carousel-caption">
+					<h3>showing others what you've made is cool</h3>
+				</div>
+			</div>
+			<div class="item">
+				<img src="https://hello-world.org.uk/assets/img/carosel7.jpg" alt="seventh slide">
+				<div class="carousel-caption">
+					<h3>other ways to code are available</h3>
+				</div>
+			</div>
+		</div>
+
+		<!-- Controls -->
+		<a class="left carousel-control" href="#carousel-example-generic" role="button" data-slide="prev"><span class="glyphicon glyphicon-chevron-left"></span></a>
+		<a class="right carousel-control" href="#carousel-example-generic" role="button" data-slide="next"><span class="glyphicon glyphicon-chevron-right"></span></a>
+	</div>

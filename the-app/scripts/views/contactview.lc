@@ -1,0 +1,42 @@
+
+		<h2>[[gData["heading"] ]]</h2>[[gData["formErrors"] ]] [[gData["captchaStyle"] ]]
+
+
+		 <h2>[[gData["emailresult"] ]]</h2>
+
+		<p>[[gData["contactMessage"] ]]</p>
+		[[gData["fldcaptchainputE"] ]]
+
+			[[gData["formcontact"] ]]
+
+		<!--<table class="table"> -->
+		<table width='760' cellpadding='25' style="z-index:2">
+			<tr>
+				<td style="text-align:right; vertical-align:top; width:250px;padding:15px">Your Name:</td>
+				<td>[[gData["fldName"] ]]</td>
+			</tr>
+			<tr>
+				<td style="text-align:right; vertical-align:top;padding:15px">Your Email Address:</td>
+				<td>[[gData["fldEmail"] ]]</td>
+			</tr>
+			<tr>
+				<td style="text-align:right; vertical-align:top;padding:15px">Subject:</td>
+				<td>[[gData["fldSubject"] ]]</td>
+			</tr>
+			<tr>
+				<td style="text-align:right; vertical-align:top;padding:15px">Message:</td>
+				<td style="padding-top:15px">[[gData["fldMessage"] ]]</td>
+			</tr>
+			<tr>
+				<td style="vertical-align:top;padding:15px"><div style="margin-bottom:10px;text-align:right">[[gData["lblcaptcha"] ]]</div><div style="text-align:right">[[gData["lblcaptcha2"] ]]</div></td>
+				<td><br/><br/>[[gData["fldcaptcha"] ]] <br/>[[gData["fldcaptchainput"] ]] *  [[gData["hash"] ]] </td>
+			</tr>
+			<tr>
+				<td colspan="2" style="text-align:right;padding-top:30px;padding-right:350px">[[gData["loginhidden"] ]] [[gData["btnSend"] ]] [[gData["formClose"] ]] </td>
+			</tr>
+			<tr>
+				<td></td>
+				<td style="text-align:right"></td>
+			</tr>
+		</table>
+		<br/><br/><br/>

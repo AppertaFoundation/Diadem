@@ -1,0 +1,73 @@
+<?rev
+# DECLARE GLOBAL VARIABLES gControllerHandlers AND gData
+global gControllerHandlers, gData
+
+# PUT YOUR HANDLER NAMES INTO THE GLOBAL gControllerHandlers AS A COMMA SEPARATED LIST
+put "index,recipients" into gControllerHandlers
+
+command recipients
+	rigLoaderLoadLibrary "Jquery"
+	rigLoaderLoadLibrary "Session"
+	rigLoaderLoadLibrary "Table"
+	rigLoaderLoadLibrary "Email"
+	rigLoaderLoadLibrary "Authentication"
+	rigLoadHelper "asset"
+	rigLoadHelper "form"
+	rigLoadHelper "url"
+	rigLoadHelper "email"
+
+	#Anchors
+	put rigAnchor("main", "Home") into gData["mainAnchor"]
+	put rigAnchor("composers", "Clinicians Undertaking DiADeM Assessments") into gData["composersAnchor"]
+	put rigAnchor("recipients", "Recipients of DiADeM Reports") into gData["recipientsAnchor"]
+	put rigAnchor("links", "Links") into gData["linksAnchor"]
+	put rigAnchor("about", "About") into gData["aboutAnchor"]
+	put rigAnchor("contact", "Contact") into gData["contactAnchor"]
+	put rigAnchor("auth", "Your Account") into gData["authAnchor"]
+
+	put "" into gData["menuActive1"]--Home
+	put "" into gData["menuActive2"]--DiADeM Composers
+	put "class=" & quote & "active" & quote into gData["menuActive3"]--Recipients of DiADeM Reports
+	put "" into gData["menuActive4"]--Links
+	put "" into gData["menuActive5"]--About
+	put "" into gData["menuactive6"]--Contact
+	put "" into gData["menuactive7"]--Your Account
+end recipients
+
+
+command index
+	-- check if a user is logged in
+   if rigAuthLoggedIn() then
+   	put rigAuthUser() into tQueryResult
+		if (tQueryResult <> false) AND (tQueryResult is an array) then
+			put rigDBRow() into tUser
+	 		put "hi" && tUser["username"] into gData["hiusername"]
+	 		put rigAnchor("auth/logout", "logout?") into gData["loginAnchor"]
+			put empty into gData["registerAnchor"]
+		end if
+ 	else
+		put rigAnchor("auth/login", "Login") into gData["loginAnchor"]
+		put empty into gData["hiusername"]
+		put " / " & rigAnchor("auth/intro", "Register") into gData["registerAnchor"]
+   end if
+
+	put "DiADeM - recipients" into gData["pageTitle"]
+	put "Recipients of DiADeM Reports" into gData["mainHeading"]
+
+ 	put getRemoteText(3) into gData["item1"]
+
+	put "" into gData["item2"]
+
+	put "<div style=" & quote & "height:50px" & quote & "></div>" into gData["verticalSpacer"]
+
+	get rigLoadView("mainheader")
+	get rigLoadView("navview")
+	get rigLoadView("basicview")
+	get rigLoadView("mainfooter")
+end index
+
+
+
+
+--| END OF about.lc
+--| Location: /system/application/controllers/about.lc

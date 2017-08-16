@@ -1,0 +1,149 @@
+<?rev
+# DECLARE GLOBAL VARIABLES gControllerHandlers AND gData
+global gControllerHandlers, gData
+
+# PUT YOUR HANDLER NAMES INTO THE GLOBAL gControllerHandlers AS A COMMA SEPARATED LIST
+put "index,webservice,verify,catchCompMetadata,getDiademRecipients" into gControllerHandlers
+
+command webservice
+	rigLoaderLoadLibrary "Jquery"
+	rigLoaderLoadLibrary "Session"
+	rigLoaderLoadLibrary "Table"
+	rigLoaderLoadLibrary "Email"
+	rigLoaderLoadLibrary "Authentication"
+	rigLoadHelper "asset"
+	rigLoadHelper "form"
+	rigLoadHelper "url"
+	rigLoadHelper "email"
+end webservice
+
+
+
+command index
+	put "Clinicians Undertaking DiADeM Assessments" into gData["pageTitle"]
+	put "Clinicians Undertaking DiADeM Assessments" into gData["mainHeading"]
+
+	--put $_POST["try"] into tTry
+	put rigVarPost("try") into tTry
+	put rigVarServer("name") into tServer
+	put the keys of tServer into tServer
+	put rigIpAddress() into tIp
+ 	put getRemoteText(tTRy) into gData["item1"]
+
+	if rigAuthLoggedIn() is FALSE then
+		put "false" into tLoggedIn
+	else
+		put "true" into tLoggedIn
+	end if
+
+	put tIp && tLoggedIn & gData["item1"]
+	--put gData["item1"]
+	--put tServer
+end index
+
+
+
+command verify
+	get rigAuthLogin(rigVarPost("username"), rigVarPost("password"))
+
+   -- if login is successful then get user data and return it back to the app
+   if it is TRUE then
+		put it && "Verified" into tStatus
+		put rigAuthUser() into tArray
+		put tArray[1] into tUser
+		put tab & tUser[1] & tab & tUser[15] after tStatus
+
+		-- insert a record in the appsessionlog database table
+		-- need something to ensure logins from the app and browser are
+		-- differiented (composerid & recipientid)
+		put $_SERVER["REMOTE_ADDR"]  into tIp
+		put tUser[1] into tId
+		put the seconds into tSecs
+		composerLogin tId, tIp, tSecs
+
+		put the result into tResult
+		if tResult is true then put tab & "Session log inserted:" && tResult after tStatus
+		else put "Unable to insert new session log into the database" into tStatus
+
+		rigAuthLogout
+   else
+		put it && "Incorrect username or password" into tStatus
+   end if
+
+	if rigAuthLoggedIn() is TRUE then rigAuthLogout
+	put tStatus
+
+end verify
+
+
+
+
+command catchCompMetadata
+	put rigVarPost("userid") into tId
+	put rigVarPost("compuuid") into tCompuuid
+	put rigVarPost("compstring") into tCompstring
+	put rigVarPost("recipientemail") into tRecipientEmail
+	put rigVarPost("recipientname") into tRecipientName
+	put rigVarPost("patientname") into tPatientName
+	put the seconds into tSecs
+	put $_SERVER["REMOTE_ADDR"]  into tIp
+
+	--put "tCompstring" && tCompstring
+	postCompMetadata tId, tCompuuid, tCompstring, tRecipientEmail, tRecipientName, tPatientName, tIp, tSecs
+	put the result into tResult
+
+	----send confirmation email to composer
+	--if tResult = true then
+		--put rigAuthUser(tId) into tQueryResult
+		--if (tQueryResult <> FALSE) and (tQueryResult is an array) then
+			--put rigDbRow() into tUser
+			--put tUser["username"] into tUsername
+			--put tUser["email"] into tTo
+		--end if
+
+		--put convertSecs(tSecs) into tDateTime
+		--rigClearMail --resets all email variables to empty
+		--put "sendmail" into tConfig["protocol"]
+		--put "html" into tConfig["mailtype"]
+		--rigInitializeMail tConfig
+
+		----put "dave@applicationinsight.com" into tTo
+		----put "dakilroy@gmail.com" into tTo
+		--put "DiADeM Web Service" into tFrom
+		--put "noreply@diademauth.code4health.org" into tReplyTo
+		--put "Confirmation of successful posting of a DiADeM composition" into tSubject
+		--put "Dear" && tUsername & "<br/><br/>" & \
+			--"This is a confirmation email informing you that a DiADeM composition was uploaded to OpenEHR from the DiADeM app using your account.<br/><br/>" & \
+			--"Clinician's Name: " & tRecipientName & "<br/>" & \
+			--"Clinician's Email: " & tRecipientEmail & "<br/>" & \
+			--"Composition Id: " & tCompstring & "<br/>" & \
+			--"Date & Time: " & tDateTime & "<br/><br/>" & \
+			--"Until development work is finished on the N3 server that DiADeM will be using, you can view the essential details of the compostion by pasting the Composition Id (see above) into the CompostionId field in the 'DiADeM' tab of the 'Test OpenEHR' mobile app.<br/><br/>" into tMessage
+		--put "<br/><br/><br/>The DiADeM Web Service at https://diademauth.code4health.org" after tMessage
+
+		--rigMailFrom tReplyTo, tFrom
+		--rigMailTo tTo
+		----rigMailCC "dakilroy@gmail.com"
+		--rigMailSubject tSubject --"Message from https://diademauth.code4health.org" #tSubject2
+		--rigMailMessage tMessage
+		--put rigMailSend() into tMailResult
+		--put rigPrintMailDebugger() into gData["mailDebug"]
+		--if tMailResult = TRUE then
+			--put tResult && "Confirmation email sent" into tResult
+		--else
+			--put gData["mailDebug"] into tResult
+		--end if
+	--end if
+	put tResult
+end catchCompMetadata
+
+
+
+
+command getDiademRecipients
+	put getReportRecipients() into tList
+		put tList
+end getDiademRecipients
+
+--| END OF webservice.lc
+--| Location: /system/application/controllers/webservice.lc

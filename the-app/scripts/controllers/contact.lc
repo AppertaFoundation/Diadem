@@ -1,0 +1,276 @@
+<?rev
+# DECLARE GLOBAL VARIABLES gControllerHandlers AND gData
+global gControllerHandlers, gData
+
+# PUT YOUR HANDLER NAMES INTO THE GLOBAL gControllerHandlers AS A COMMA SEPARATED LIST
+put "index,contact,captchainput" into gControllerHandlers
+
+command contact
+	rigLoaderLoadLibrary "Jquery"
+	rigLoaderLoadLibrary "Session"
+	rigLoaderLoadLibrary "Table"
+	rigLoaderLoadLibrary "Email"
+	rigLoaderLoadLibrary "Authentication"
+	rigLoaderLoadLibrary "Formvalidation"
+	rigLoaderLoadLibrary "Captcha"
+
+	rigLoadHelper "asset"
+	rigLoadHelper "form"
+	rigLoadHelper "url"
+	rigLoadHelper "email"
+
+	put "Got a question? Please get in touch..." into gData["heading"]
+	put "By filling out the form below. " into gData["contactMessage"]
+	put "DiADeM - Contact" into gData["pageTitle"]
+	--put "<h2>Plymouth Code Club</h2>" into gData["mainTitle"]
+
+	#Anchors
+	put rigAnchor("main", "Home") into gData["mainAnchor"]
+	put rigAnchor("composers", "Clinicians Undertaking DiADeM Assessments") into gData["composersAnchor"]
+	put rigAnchor("recipients", "Recipients of DiADeM Reports") into gData["recipientsAnchor"]
+	put rigAnchor("links", "Links") into gData["linksAnchor"]
+	put rigAnchor("about", "About") into gData["aboutAnchor"]
+	put rigAnchor("contact", "Contact") into gData["contactAnchor"]
+	put rigAnchor("auth", "Your Account") into gData["authAnchor"]
+
+	put "" into gData["menuActive1"]--Home
+	put "" into gData["menuActive2"]--DiADeM Composers
+	put "" into gData["menuActive3"]--Recipients of DiADeM Reports
+	put "" into gData["menuActive4"]--Links
+	put "" into gData["menuActive5"]--About
+	put "class=" & quote & "active" & quote into gData["menuactive6"]--Contact
+	put "" into gData["menuactive7"]--Your Account
+end contact
+
+
+command index
+	-- check if a user is logged in
+   if rigAuthLoggedIn() then
+   	put rigAuthUser() into tQueryResult
+		if (tQueryResult <> false) AND (tQueryResult is an array) then
+			put rigDBRow() into tUser
+	 		put "hi" && tUser["username"] into gData["hiusername"]
+	 		put rigAnchor("auth/logout", "logout?") into gData["loginAnchor"]
+			put empty into gData["registerAnchor"]
+		end if
+ 	else
+		put rigAnchor("auth/login", "Login") into gData["loginAnchor"]
+		put empty into gData["hiusername"]
+		put " / " & rigAnchor("auth/intro", "Register") into gData["registerAnchor"]
+   end if
+
+	--get captcha css
+	put rigCaptchaStyle() into gData["captchaStyle"]
+
+	put rigSessUserdata("username") into tName
+	#if tName <> FALSE then
+		#put "hi " & tName & " - "into gData["hiusername"]
+		#put rigAnchor("logout", "logout?") into gData["loginAnchor"]
+
+
+		#form to email the invoice
+		put "contact" into tAttributes["class"]
+		put "contact" into tAttributes["id"]
+		put rigFormOpen("contact", tAttributes) into gData["formcontact"]
+		put rigFormHidden("click", "sendemail") into gData["loginhidden"]
+
+
+		--captcha
+		--label
+		put rigFormLabel("<h3>Captcha:</h3>", "lblcaptcha") into gData["lblcaptcha"]
+
+		--get captcha, the HTML code which displays the captcha digits
+		put rigCaptcha() into gData["captcha"]
+		--put rigCaptchaMathProblem() into gData["captcha"]
+		put rigFormLabel(gData["captcha"], "fldcaptcha") into gData["fldcaptcha"]
+
+		--fldcaptchainput
+		put "fldcaptchainput" into tData["name"]
+		put "fldcaptchainput" into tData["id"]
+		put "" into tData["value"]
+		put "width:160px" into tData["style"]
+		put rigFormInput(tData) into gData["fldcaptchainput"]
+		put rigFormLabel("Please enter these four numbers<br/> to indicate you are sentient", "lblcaptcha") into gData["lblcaptcha2"]
+
+		--captcha hash
+		put rigGetCaptchaHash() into gData["captchaHash"]
+
+		--get the number the captcha is built with - the result of a math problem
+		put rigGetCaptchaNum() into gData["captchaNum"]
+
+		--create mashed up hash for a hidden field
+		put len(gData["captchaHash"]) into tNumh
+		put char 1 to 10 of gData["captchaHash"] into tHash
+		put gData["captchaNum"] after tHash
+		put char 11 to tNumh of gData["captchaHash"] after tHash
+		put rigFormHidden("hash",tHash) into gData["hash"]
+
+
+		put "fldName" into tData["name"]
+		put "fldName" into tData["id"]
+		put "" into tData["value"]
+		put "40" into tData["size"]
+		put rigFormInput(tData) into gData["fldName"]
+
+		put "fldEmail" into tData["name"]
+		put "fldEmail" into tData["id"]
+		put "" into tData["value"]
+		put "40" into tData["size"]
+		put rigFormInput(tData) into gData["fldEmail"]
+
+		#Subject dropdown
+		put rigFormLabel("Select a Subject:", "lblcustomerID") into gData["lblcustomerID"]
+		put empty into tCustomers
+		put empty into tAttributes
+		put "subjectdropdown" into tAttributes["class"]
+		put "subjectdropdown" into tAttributes["id"]
+		--put getEventsForDropdown() into tOptions
+		put "Please Select..." into tOptions[0]
+		put "Registering as a DiADeM Composer (user of the app)" into tOptions[100]
+		put "Registering as a DiADeM Report Recipient" into tOptions[200]
+		put "An issue with this website" into tOptions[300]
+		put "Other..." into tOptions[400]
+		put rigFormDropDown("fldSubject", tOptions, "0") into gData["fldSubject"]
+
+		put rigFormLabel("Message:", "lblMessage") into gData["lblMessage"]
+		put "fldMessage" into tData["name"]
+		put "fldMessage" into tData["id"]
+		put "" into tData["value"]
+		put "width:350px;height:120px" into tData["style"]
+		put rigFormTextarea(tData) into gData["fldMessage"]
+
+		put rigFormLabel(tAddress, "lblAddress") into gData["lblAddress"]
+		put rigSubmitButton("btnSend", "Send Message") into gData["btnSend"]
+		--
+		put rigFormClose() into gData["formClose"]
+
+
+		--validation
+		rigSetRules "fldcaptchainput", "Captcha", "requiredR|callback_captchainput"
+
+
+
+		if rigformValidRun() is FALSE then
+			--don't proceed - get validation errors
+			--put rigValidationErrors() into tErr
+			--put "<div style=" & quote & "color:red;margin-bottom:20px" & quote & ">" & tErr & "</div>" into gData["formErrors"]
+
+			put "<div style=" & quote & "color:red" & quote & ">" into tDiv1
+			put "</div>" into tDiv2
+
+			put tDiv1 & rigFormError("fldcaptchainput") & tDiv2 into gData["fldcaptchainputE"]
+
+			--repopulate the form - rigSetValue("")
+			--contactname
+			put "fldcontactname" into tData["name"]
+			put "fldcontactname" into tData["id"]
+			put rigSetValue("fldContactname") into tData["value"]
+			put "width:350px" into tData["style"]
+			put rigFormInput(tData) into gData["fldcontactname"]
+
+			--name
+			put rigFormLabel(gData["name"], "titlename") into gData["titlename"]
+			put rigFormLabel("Organisation Name:", "lblname") into gData["lblname"]
+			put "fldname" into tData["name"]
+			put "fldname" into tData["id"]
+			put rigSetValue("fldname") into tData["value"]
+			put "width:350px" into tData["style"]
+			put rigFormInput(tData) into gData["fldname"]
+
+			--email for website
+			put "fldemail" into tData["name"]
+			put "fldemail" into tData["id"]
+			put rigSetValue("fldemail") into tData["value"]
+			put "width:350px" into tData["style"]
+			put rigFormInput(tData) into gData["fldemail"]
+
+			--get rigLoadView("memberaddview")
+		else
+			--all OK - proceed with email
+
+			#check if "btnEmail" has been clicked, and if so send an email
+			if rigVarPost("click") = "sendemail" then
+				put "sendmail" into tConfig["protocol"]
+				put "html" into tConfig["mailtype"]
+				rigInitializeMail tConfig
+
+				put "diadem@applicationinsight.com" into tTo
+				--put "diadem@diademauth.code4health.org"
+				put "DiADeM Web Service" into tFrom
+				--put "noreply@applicationinsight.com" into tReplyTo
+				put "noreply@diademauth.code4health.org" into tReplyTo
+				put rigVarPost("fldName") into tName
+				put rigVarPost("fldEmail") into tEmail
+				put rigVarPost("fldSubject") into tSubject
+				switch tSubject
+					case "100"
+						put "Registering as a user of the DiADeM app" into tSubject2
+						break
+					case "200"
+						put "Registering as a recipient of a DiADeM Report" into tSubject2
+						break
+					case "300"
+						put "An issue with this website" into tSubject2
+						break
+					case "400"
+						put "Other..." into tSubject2
+						break
+					case default
+						put "User selected no subject." into tSubject2
+				end switch
+
+				put "Name: " & tName & "<br/>" & \
+					"Email: " & tEmail & "<br/>" & \
+					"Subject: " & tSubject2 & "<br/><br/><br/>" into tMessage
+				put rigVarPost("fldMessage") after tMessage
+				put "<br/><br/><br/>Sent from the Contact form at https://diademauth.code4health.org" after tMessage
+
+				rigMailFrom tReplyTo, tFrom
+				rigMailTo tTo
+				rigMailCC tEmail
+				rigMailSubject "Message from https://diademauth.code4health.org" #tSubject2
+				rigMailMessage tMessage
+				put rigMailSend() into tMailResult
+				put rigPrintMailDebugger() into gData["mailDebug"]
+				if tMailResult = TRUE then
+					put "<div style=" & quote & "color:green" & quote & ">" into tDiv1
+					put tDiv1 & "Message sent successfully" & "</div>" into gData["emailresult"]
+				else
+					put "<div style=" & quote & "color:red" & quote & ">" into tDiv1
+					put tDiv1 & gData["mailDebug"] & "</div>" into gData["emailresult"]
+				end if
+				put empty into gData["contactMessage"]
+				#put gData["mailDebug"]
+			end if
+		end if
+
+	get rigLoadView("mainheader")
+	get rigLoadView("navview")
+	--get rigLoadView("jumbotronview")
+	--get rigLoadView("col3view")
+	get rigLoadView("contactview")
+	get rigLoadView("mainfooter")
+
+
+end index
+
+
+command captchainput pStr
+	put rigVarPost("hash") into tHash
+	put len(tHash) into tNumh
+	put char 11 to 14 of tHash into tCaptchaNum
+	delete char 11 to 14 of tHash
+	put tHash into tCaptchaHash
+
+	if pStr = tCaptchaNum then
+		return true
+	else
+		rigSetMessage "captchainput","The numbers you entered didn't match."
+		return false
+	end if
+
+end captchainput
+
+
+--| END OF contact.lc
+--| Location: /system/application/controllers/contact.lc

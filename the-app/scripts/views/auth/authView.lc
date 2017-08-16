@@ -1,0 +1,21 @@
+<body>
+
+	<div id="container" class="adminPage">
+		<header>
+			<h2>Users</h2>
+		</header>
+
+		<div id="main" role="main">
+
+
+		<div id="infoMessage">[[gData["message"] ]]</div>
+
+			[[gData["usersTable"] ]]
+
+			<p style="margin-top:30px">[[gData["newUserLink"] ]]</p>
+
+		</div>
+	</div> <!--! end of #container -->
+
+</body>
+</html>

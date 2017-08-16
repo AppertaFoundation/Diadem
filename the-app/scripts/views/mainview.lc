@@ -1,0 +1,25 @@
+	<? put rigLoadView("mainheader", TRUE) into tMainheader ?>
+
+	h1>[[gData["heading"] ]]</h1>
+		<div width="100%" align="right">[[gData["statusdropdownform"] ]] [[gData["loginhidden3"] ]] [[gData["ddstatus"] ]]  [[gData["btnselectddstatus"] ]] [[gData["formClose3"] ]]</div>
+
+		[[Data["welcome"] ]]
+
+		<distyle="margin-top:30px;margin-left:10px;margin-bottom:30px;text-align:center">
+			<div style="width:300px;height:250px;">[[gData["graphic"] ]] </div>
+			<div style="width:300px;height:250px;margin-left:300px;margin-top:-250px">[[gData["prog"] ]]</div>
+			<div style="margin-top:35px;text-align:left">[[gData["subtitle"] ]]</div>
+			<div style="width:300px;height:200px;">[[gData["collage"] ]]</div>
+			<div style="width:300px;height:200px;margin-left:300px;margin-top:-200px">[[gData["movie"] ]]</div>
+			<div style="text-align:center">
+				[[gData["festival2013"] ]]
+				[[gData["festival2012"] ]]
+				[[gData["festival2011"] ]]
+			</div>
+		</div>
+
+		[[gDainterested"] ]]
+
+		[[gData["pageHeading"] ]]
+
+	<? put rigLoadView("mainfooter", TRUE) into tFooter ?>

@@ -1,0 +1,94 @@
+<?rev
+# DECLARE GLOBAL VARIABLES gControllerHandlers AND gData
+global gControllerHandlers, gData
+
+# PUT YOUR HANDLER NAMES INTO THE GLOBAL gControllerHandlers AS A COMMA SEPARATED LIST
+put "index,main" into gControllerHandlers
+
+command main
+	rigLoaderLoadLibrary "Jquery"
+	rigLoaderLoadLibrary "Session"
+	rigLoaderLoadLibrary "Table"
+	rigLoaderLoadLibrary "Email"
+	rigLoaderLoadLibrary "Authentication"
+
+	rigLoadHelper "asset"
+	rigLoadHelper "form"
+	rigLoadHelper "url"
+	rigLoadHelper "email"
+
+	put "DiADeM Web Service - Home" into gData["pageTitle"]
+	put "<h3>DiADeM Web Service</h3>" into gData["pageHeading"]
+	put "<h2>DiADeM Web Service</h2>" into gData["mainTitle"]
+
+	put getRemoteText(1) into gData["introText"]
+
+	--put "<img src=" & quote & "http://diademauth.code4health.org/assets/img/diadem-on-iphone.png" & quote & " alt=" & quote & "DiADeM app" & quote & " width=" & quote & "150" & quote & " >" into gData["item2"]
+	--put "<img src=" & quote & "http://diademauth.code4health.org/assets/img/diademReport.jpg" & quote & " alt=" & quote & "DiADeM Report" & quote & " width=" & quote & "150" & quote & " >" into gData["item3"]
+
+	put "<h3 style=" & quote & "text-align:center" & quote & ">Background to DiADeM</h3>" into gData["subtitle1"]
+	put "<h3 style=" & quote & "text-align:center" & quote & ">Clinicians Undertaking DiADeM Assessments</h3>" into gData["subtitle2"]
+	put "<h3 style=" & quote & "text-align:center" & quote & ">Recipients of DiADeM Reports</h3>" into gData["subtitle3"]
+
+	put "<p style=" & quote & "text-align:center" & quote & ">Find out what the DiADeM app is, how it came about, who is behind it and plans for the future.</p>" & "<div style=" & quote & "text-align:center;margin-bottom:10px" & quote & "><img src=" & quote & "https://diademauth.code4health.org/assets/img/diadem-tool.png" & quote & " alt=" & quote & "DiADeM Tool" & quote & " height=" & quote & "220" & quote & " ></div>" into gData["col1"]
+	put "<p style=" & quote & "text-align:center" & quote & ">Do you wish to become a user of the app and create DiADeM reports with it?</p>" & "<div style=" & quote & "text-align:center;margin-bottom:10px" & quote & "><img src=" & quote & "https://diademauth.code4health.org/assets/img/diadem-on-iphone.png" & quote & " alt=" & quote & "DiADeM app" & quote & " height=" & quote & "220" & quote & " ></div>" into gData["col2"]
+	put "<p style=" & quote & "text-align:center" & quote & ">Are you about to be sent links to DiADeM reports and need to access them?</p>" & "<div style=" & quote & "text-align:center;margin-bottom:10px" & quote & "><img src=" & quote & "https://diademauth.code4health.org/assets/img/diademReport.jpg" & quote & " alt=" & quote & "DiADeM Report" & quote & " height=" & quote & "220" & quote & " ></div>" into gData["col3"]
+
+	put "<p style=" & quote & "text-align:center" & quote & " ><a type=" & "button" & quote & " class=" & quote & "btn btn-primary" & quote & "data-toggle=" & quote & "tooltip" & quote & " data-placement=" & quote & "bottom" & quote & " href=" & quote & "https://diademauth.code4health.org/about" & quote & ">View details &raquo;</a></p>" into gData["link1"]
+	put "<p style=" & quote & "text-align:center" & quote & " ><a class=" & quote & "btn btn-primary" & quote & " href=" & quote & "https://diademauth.code4health.org/composers" & quote & ">View details &raquo;</a></p>" into gData["link2"]
+	put "<p style=" & quote & "text-align:center" & quote & " ><a class=" & quote & "btn btn-primary" & quote & " href=" & quote & "https://diademauth.code4health.org/recipients" & quote & ">View details &raquo;</a></p>" into gData["link3"]
+
+	#Anchors
+	put rigAnchor("main", "Home") into gData["mainAnchor"]
+	put rigAnchor("composers", "Clinicians Undertaking DiADeM Assessments") into gData["composersAnchor"]
+	put rigAnchor("recipients", "Recipients of DiADeM Reports") into gData["recipientsAnchor"]
+	put rigAnchor("links", "Links") into gData["linksAnchor"]
+	put rigAnchor("about", "About") into gData["aboutAnchor"]
+	put rigAnchor("contact", "Contact") into gData["contactAnchor"]
+	put rigAnchor("auth", "Your Account") into gData["authAnchor"]
+
+	put "class=" & quote & "active" & quote into gData["menuActive1"]--Home
+	put "" into gData["menuActive2"]--DiADeM Composers
+	put "" into gData["menuActive3"]--Recipients of DiADeM Reports
+	put "" into gData["menuActive4"]--Links
+	put "" into gData["menuActive5"]--About
+	put "" into gData["menuactive6"]--Contact
+	put "" into gData["menuactive7"]--Your Account
+end main
+
+
+command index
+	-- check if a user is logged in
+   if rigAuthLoggedIn() then
+   	put rigAuthUser() into tQueryResult
+		if (tQueryResult <> false) AND (tQueryResult is an array) then
+			put rigDBRow() into tUser
+	 		put "hi" && tUser["username"] into gData["hiusername"]
+	 		put rigAnchor("auth/logout", "logout?") into gData["loginAnchor"]
+			put empty into gData["registerAnchor"]
+		end if
+ 	else
+		put rigAnchor("auth/login", "Login") into gData["loginAnchor"]
+		put empty into gData["hiusername"]
+		put " / " & rigAnchor("auth/intro", "Register") into gData["registerAnchor"]
+   end if
+
+	--put rigSessUserdata("username") into tUser
+	--put rigSessUserdata("userlevel") into tLevel
+
+	put "<div style=" & quote & "height:40px" & quote & "></div>" into gData["verticalSpacer"]
+
+	get rigLoadView("mainheader")
+	get rigLoadView("navview")
+	--get rigLoadView("jumbotronview")
+	--get rigLoadview("basicview")
+	get rigLoadView("col3view")
+	get rigLoadView("basicview")
+	get rigLoadView("mainfooter")
+end index
+
+
+
+
+--| END OF main.lc
+--| Location: /system/application/controllers/main.lc

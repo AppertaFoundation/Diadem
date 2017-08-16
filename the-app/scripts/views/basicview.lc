@@ -1,0 +1,13 @@
+
+
+		<h2>[[gData["mainHeading"] ]]</h2>
+
+		<p>[[gData["item1"] ]]</p>
+		<p>[[gData["item2"] ]]</p>
+		<p>[[gData["item3"] ]]</p>
+		<p>[[gData["item4"] ]]</p>
+		<p>[[gData["item5"] ]]</p>
+		<p>[[gData["item6"] ]]</p>
+
+		[[gData["verticalSpacer"] ]]
+		<br/><br/>

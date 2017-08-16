@@ -1,0 +1,12 @@
+
+	<div style="margin-top:58px;margin-left:-25px">
+	<h2>[[gData["introTitle"] ]]</h2>
+	[[gData["introMessage1"] ]]
+	[[gData["introMessage2"] ]]
+	[[gData["introMessage3"] ]]
+	[[gData["introMessage4"] ]]
+	<h2 style="margin-top:30px">[[gData["introTitle2"] ]]</h2>
+	[[gData["introMessage5"] ]]
+
+	[[gData["verticalSpacer"] ]]
+	</div>

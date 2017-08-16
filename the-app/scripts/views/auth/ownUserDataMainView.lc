@@ -1,0 +1,11 @@
+<?
+put "<div style=" & quote & "margin-left:5px;margin-top:-50px;margin-bottom:100px" & quote & ">" into tDivStart
+put "</div>" into tDivStop
+
+put rigLoadView("mainheader", TRUE) into tHeader
+put rigLoadView("navview", TRUE) into tNav
+put tDivStart & rigLoadView("auth/ownUserDataView", TRUE) & tDivStop into tContent
+put rigLoadView("mainfooter", TRUE) into tFooter
+
+return tHeader && tNav && tContent && tFooter
+?>

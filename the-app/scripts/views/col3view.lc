@@ -1,0 +1,20 @@
+
+<!--<div class="container">-->
+	<div class="row">
+    	<div class="col-md-4">
+      		[[gData["subtitle1"] ]]
+			[[gData["col1"] ]]
+			[[gData["link1"] ]]
+		</div>
+		<div class="col-md-4">
+      		[[gData["subtitle2"] ]]
+			[[gData["col2"] ]]
+			[[gData["link2"] ]]
+		</div>
+		<div class="col-md-4">
+			[[gData["subtitle3"] ]]
+			[[gData["col3"] ]]
+			[[gData["link3"] ]]
+		</div>
+	</div>
+	<div style="height:10px"></div>
