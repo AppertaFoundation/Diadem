@@ -1,0 +1,9 @@
+DiADeM Assessment.v1	DiADeM Assessment	openEHR-EHR-COMPOSITION.encounter.v1	en	US	Silvia Blake	9091	Hospital	HOSPITAL-NS	HOSPITAL-NS
+templateId	DiADeM Assessment.v1
+compName	DiADeM Assessment
+nodeId	openEHR-EHR-COMPOSITION.encounter.v1
+userName	diadem_c4h
+password	ZWxPpbyw
+rootUrl	https://ehrscape.code4health.org
+subjectId	9999999000
+aql.compositionId.fromSubjectId	select a/uid/value as compositionId, a/context/start_time/value as start_time from EHR e[ehr_id/value='{ehrid}'] contains COMPOSITION a[{nodeId}] where a/name/value='{compname}' order by a/context/start_time/value desc offset 0 limit 1
