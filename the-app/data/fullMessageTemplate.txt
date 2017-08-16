@@ -10,7 +10,6 @@ DIADEM REPORT
 Test Date: xxTestDatexx
 Test Time: xxTestTimexx
 Interviewer Name: xxInterviewerNamexx
-Patient Name: xxPatientNamexx
 Patient Date of Birth: xxPatientDoBxx
 Informant Name: xxInformantNamexx
 Location: xxLocationNamexx - xxLocationTypexx (xxLocationCodexx)
