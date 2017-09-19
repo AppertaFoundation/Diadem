@@ -10,9 +10,15 @@ Most of the development work has been done on the app and associated server reso
 
 When the above issues (plus some further refinements and 'polishing') are complete the app will be released on the Apple App Store and Google Play
 
+More information on DiADeM can be found at http://diadem.apperta.org, https://code4health.org/Dementia and https://diademauth.code4health.org
 
 
-### DiADeM, Code4Health & OpenEHR at the LiveCode Conference
+# LiveCode & OpenEHR
+The DiADeM app makes use of OpenEHR and connects to it via the [libLivecodeOpenEHR](https://github.com/ApplicationInsight/lib-LiveCode-OpenEHR) developer tools.
+
+
+
+## DiADeM, Code4Health & OpenEHR at the 2016 LiveCode Conference
 In August 2016 there were several health-related sessions at the LiveCode conference - with the following ones focusing on DiADeM. These session recordings have been made available by LiveCode for sharing among the OpenEHR community...
 
 ### Code4Health and The Apperta Foundation
@@ -52,7 +58,3 @@ Dr Ian McNicoll - Co-Chair, openEHR Foundation. Director, freshEHR Clinical Info
 Dave Kilroy - Director, Application Insight Ltd
 
 [NHS Panel Session - Video Recording (48:11)](http://livecode.wistia.com/medias/rcb8ts0gb8?embedType=async&videoFoam=true&videoWidth=0)
-
-# LiveCode & OpenEHR
-The DiADeM app makes use of OpenEHR and connects to it via the [libLivecodeOpenEHR](https://github.com/ApplicationInsight/lib-LiveCode-OpenEHR) developer tools.
-
