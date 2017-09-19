@@ -5,6 +5,13 @@ See resources in the [the-app](the-app/) directory for details of the *DiADeM* a
 
 
 
+## Update (19th September 2017)
+Most of the development work has been done on the app and associated server resources, and DiADeM is now in 'open beta'. It is not yet ready to be used with real patient's data until final issues around secure hosting and information governance are finalised - but it does function
+
+When the above issues (plus some further refinements and 'polishing') are complete the app will be released on the Apple App Store and Google Play
+
+
+
 ### DiADeM, Code4Health & OpenEHR at the LiveCode Conference
 In August 2016 there were several health-related sessions at the LiveCode conference - with the following ones focusing on DiADeM. These session recordings have been made available by LiveCode for sharing among the OpenEHR community...
 
@@ -49,7 +56,3 @@ Dave Kilroy - Director, Application Insight Ltd
 # LiveCode & OpenEHR
 The DiADeM app makes use of OpenEHR and connects to it via the [libLivecodeOpenEHR](https://github.com/ApplicationInsight/lib-LiveCode-OpenEHR) developer tools.
 
-## Update (19th September 2017)
-Most of the development work has been done on the app and associated server resources, and DiADeM is now in 'open beta'. It is not yet ready to be used with real patient's data until final issues around secure hosting and information governance are finalised - but it does function
-
-When the above issues (plus some further refinements and 'polishing') are complete the app will be released on the Apple App Store and Google Play
